@@ -1,0 +1,3 @@
+pynvim
+sqlite3
+google-generativeai
