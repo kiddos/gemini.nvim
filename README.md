@@ -3,6 +3,33 @@
 This plugin try to interface Google's Gemini API into neovim.
 
 
+It does take some practice to prompt this thing
+
+https://github.com/kiddos/gemini.nvim/assets/9444583/14c09cc3-81b5-480a-9121-51a35fd0e492
+
+
+popup menu
+
+https://github.com/kiddos/gemini.nvim/assets/9444583/8fd25a4d-03c9-45aa-9c0f-5db7b65cf810
+
+
+https://github.com/kiddos/gemini.nvim/assets/9444583/0b05f86e-feca-49d0-937c-59f6992d87f4
+
+
+function hints
+
+https://github.com/kiddos/gemini.nvim/assets/9444583/d6d0e384-4926-4ffd-856d-a1cb15323449
+
+It sort of works for flutter widget too?
+
+https://github.com/kiddos/gemini.nvim/assets/9444583/303fddce-dd5c-418d-a7d9-e2a099c5a066
+
+
+and rust?
+
+https://github.com/kiddos/gemini.nvim/assets/9444583/e4f5ad4c-cc40-4890-8151-696f1e0b0e77
+
+
 ## Installation
 
 ```shell
