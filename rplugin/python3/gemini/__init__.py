@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Callable, Any
 import re
 
 import pynvim
@@ -12,25 +12,28 @@ generation_config = {
   'temperature': 0.3,
   'top_p': 0.6,
   'top_k': 100,
-  'max_output_tokens': 2048,
 }
 
 safety_settings = [
   {
+    'category': 'HARM_CATEGORY_DANGEROUS',
+    'threshold': 'BLOCK_NONE',
+  },
+  {
     'category': 'HARM_CATEGORY_HARASSMENT',
-    'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+    'threshold': 'BLOCK_NONE'
   },
   {
     'category': 'HARM_CATEGORY_HATE_SPEECH',
-    'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+    'threshold': 'BLOCK_NONE'
   },
   {
     'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-    'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+    'threshold': 'BLOCK_NONE'
   },
   {
     'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
-    'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+    'threshold': 'BLOCK_NONE'
   },
 ]
 
@@ -67,6 +70,20 @@ def insert_chat(request: str, response: str):
   con.close()
 
 
+def retry(times: int, default_val: Any, on_error: Callable = None):
+  def decorator(f):
+    def g(*args, **kwargs):
+      for i in range(times):
+        try:
+          return f(*args, **kwargs)
+        except Exception as e:
+          if on_error:
+            on_error(e)
+      return default_val
+    return g
+  return decorator
+
+
 @pynvim.plugin
 class GeminiPlugin(object):
 
@@ -98,6 +115,15 @@ class GeminiPlugin(object):
   def _check_setup(self):
     return hasattr(self, 'model')
 
+  def _extra_chunk(self, chunk):
+    text = ''
+    try:
+      text += chunk.text
+    except Exception:
+      for part in chunk.parts:
+        text += part.text
+    return text
+
   @pynvim.function('_gemini_api_stream_async', sync=False)
   def async_api_call_stream(self, args: List):
     if not self._check_setup():
@@ -122,7 +148,8 @@ class GeminiPlugin(object):
       response = self.model.generate_content(prompt_parts, stream=True)
       current = ''
       for chunk in response:
-        current += chunk.text
+        current += self._extra_chunk(chunk)
+
         self.nvim.request('nvim_buf_set_lines', bufnr, 0, -1, False, current.split('\n'))
         current_win = self.nvim.request('nvim_get_current_win')
         if current_win.handle == win_id:
@@ -157,6 +184,11 @@ class GeminiPlugin(object):
     except Exception:
       return ''
 
+  @retry(times=6, default_val='')
+  def _retry_generate(self, prompt_parts):
+    response = self.model.generate_content(prompt_parts)
+    return response.text
+
   @pynvim.function('_gemini_api_async', sync=False)
   def async_api_call(self, args: List):
     if not self._check_setup():
@@ -178,16 +210,14 @@ class GeminiPlugin(object):
     prompt_parts = [request + '\n']
 
     try:
-      response = self.model.generate_content(prompt_parts, stream=True)
-      result = ''
-      for chunk in response:
-        result += chunk.text
+      result = self._retry_generate(prompt_parts)
 
       if extract_code:
-        pattern = r'^```(?:\w+)?\s*\n(.*?)(?=^```)```'
+        pattern = r'^```([a-zA-Z+-_]*)?\s*\n(.*?)(?=^```)```'
         search_result = re.findall(pattern, result, re.DOTALL | re.MULTILINE)
         if len(search_result) > 0:
-          result = search_result[0]
+          for entry in search_result:
+            result += entry[1]
 
       self.module.handle_async_callback({
         'result': result,
