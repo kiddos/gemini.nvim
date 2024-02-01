@@ -2,6 +2,7 @@ local M = {}
 
 local default_config = {
   menu_key = '<C-o>',
+  insert_result_key = '<S-Tab>',
   hints_delay = 3000,
   instruction_delay = 2000,
 }

@@ -47,7 +47,7 @@ M.setup = function(opts)
     })
   end
 
-  local modes = { 'i', 'n', 'v' }
+  local modes = { 'i', 'n' }
   for _, mode in pairs(modes) do
     register_keymap(mode, config.get_config().menu_key)
   end
@@ -66,7 +66,7 @@ M.setup = function(opts)
     end,
   })
 
-  vim.api.nvim_set_keymap('n', '<S-Tab>', '', {
+  vim.api.nvim_set_keymap('n', config.get_config().insert_result_key, '', {
     callback = function()
       M.insert_instruction_result()
     end,
@@ -88,11 +88,15 @@ M.handle_async_callback = function(params)
 end
 
 M.prepare_code_prompt = function(prompt, bufnr)
+  local wrap_code = function(code)
+    local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+    local code_markdown = '```' .. filetype .. '\n' .. code .. '\n```'
+    return prompt .. '\n\n' .. code_markdown
+  end
+
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local code = vim.fn.join(lines, '\n')
-  local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-  local code_markdown = '```' .. filetype .. '\n' .. code .. '\n```'
-  return prompt .. '\n\n' .. code_markdown
+  return wrap_code(code)
 end
 
 M.show_stream_response = function(name, system_prompt)
@@ -126,10 +130,13 @@ M.open_window = function(content, options)
     vim.api.nvim_win_close(win_id, true)
   end
 
-  vim.api.nvim_buf_set_keymap(bufnr, 'n', '<C-q>', '', {
-    silent = true,
-    callback = close_popup,
-  })
+  local keys = { '<C-q>', 'q' }
+  for _, key in pairs(keys) do
+    vim.api.nvim_buf_set_keymap(bufnr, 'n', key, '', {
+      silent = true,
+      callback = close_popup,
+    })
+  end
   return win_id, bufnr, border
 end
 

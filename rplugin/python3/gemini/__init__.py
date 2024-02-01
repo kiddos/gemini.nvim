@@ -216,6 +216,7 @@ class GeminiPlugin(object):
         pattern = r'^```([a-zA-Z+-_]*)?\s*\n(.*?)(?=^```)```'
         search_result = re.findall(pattern, result, re.DOTALL | re.MULTILINE)
         if len(search_result) > 0:
+          result = ''
           for entry in search_result:
             result += entry[1]
 

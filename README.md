@@ -3,7 +3,7 @@
 This plugin try to interface Google's Gemini API into neovim.
 
 
-It does take some practice to prompt this thing
+It does take some practice to prompt this thing, default press `<S-Tab>` to select the result
 
 https://github.com/kiddos/gemini.nvim/assets/9444583/14c09cc3-81b5-480a-9121-51a35fd0e492
 
@@ -68,6 +68,14 @@ use {
 }
 ```
 
+To install manually
+
+```shell
+pip install pynvim google-generativeai
+```
+
+and run `:UpdateRemotePlugins`
+
 ## Settings
 
 - default setting
@@ -75,6 +83,7 @@ use {
 ```lua
 require('gemini').setup({
   menu_key = '<C-o>',
+  insert_result_key = '<S-Tab>',
   hints_delay = 3000,
   instruction_delay = 2000,
   menu_prompts = {
@@ -112,3 +121,7 @@ Instruction: ***{instruction}***
   ]],
 })
 ```
+
+## TODO
+
+- [ ] 
