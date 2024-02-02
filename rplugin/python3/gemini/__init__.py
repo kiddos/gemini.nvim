@@ -107,6 +107,7 @@ class GeminiPlugin(object):
 
     setup_sqlite()
     # self.nvim.request('nvim_notify', 'GenerativeModel setup.', 2, {})
+    self.chat_history = []
 
   def _setup_module(self):
     self.nvim.exec_lua("_gemini_plugin = require('gemini')")
@@ -244,3 +245,44 @@ class GeminiPlugin(object):
       results.append(
         dict(name=model.name, supported_generation_methods=model.supported_generation_methods))
     return results
+
+  @pynvim.function('_generative_ai_chat', sync=False)
+  def start_chat(self, args: List):
+    if not self._check_setup():
+      return
+
+    if len(args) != 2:
+      return
+    if not isinstance(args[0], dict):
+      return
+    if not isinstance(args[1], str):
+      return
+
+    context = args[0]
+    win_id = context['win_id']
+    bufnr = context['bufnr']
+    request = args[1]
+
+    self.nvim.request('nvim_buf_set_lines', bufnr, 0, -1, False, ['Generating...'])
+
+    conversation = self.model.start_chat(history=self.chat_history)
+    conversation.send_message(request + '\n', stream=True)
+
+    last_response = conversation.last
+    current = ''
+    for chunk in last_response:
+      current += self._extra_chunk(chunk)
+
+      self.nvim.request('nvim_buf_set_lines', bufnr, 0, -1, False, current.split('\n'))
+      current_win = self.nvim.request('nvim_get_current_win')
+      if current_win.handle == win_id:
+        self.nvim.request('nvim_feedkeys', 'G$', 'n', False)
+
+    self.chat_history.append({
+      'role': 'user',
+      'parts': [request],
+    })
+    self.chat_history.append({
+      'role': 'model',
+      'parts': [current]
+    })
