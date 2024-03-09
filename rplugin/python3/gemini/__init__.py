@@ -103,15 +103,14 @@ class GeminiPlugin(object):
       safety_settings=safety_settings,
     )
 
-    self._setup_module()
+    self.nvim.exec_lua("_gemini_plugin = require('gemini')")
+    self.module = self.nvim.lua._gemini_plugin
 
     setup_sqlite()
     # self.nvim.request('nvim_notify', 'GenerativeModel setup.', 2, {})
     self.chat_history = []
 
-  def _setup_module(self):
-    self.nvim.exec_lua("_gemini_plugin = require('gemini')")
-    self.module = self.nvim.lua._gemini_plugin
+    self.namespace_id = self.nvim.request('nvim_create_namespace', 'gemini')
 
   def _check_setup(self):
     return hasattr(self, 'model')
@@ -151,10 +150,13 @@ class GeminiPlugin(object):
       for chunk in response:
         current += self._extra_chunk(chunk)
 
-        self.nvim.request('nvim_buf_set_lines', bufnr, 0, -1, False, current.split('\n'))
-        current_win = self.nvim.request('nvim_get_current_win')
-        if current_win.handle == win_id:
-          self.nvim.request('nvim_feedkeys', 'G$', 'n', False)
+        try:
+          self.nvim.request('nvim_buf_set_lines', bufnr, 0, -1, False, current.split('\n'))
+          current_win = self.nvim.request('nvim_get_current_win')
+          if current_win.handle == win_id:
+            self.nvim.request('nvim_feedkeys', 'G$', 'n', False)
+        except Exception:
+          pass
 
       self.nvim.request('nvim_echo', [['gemini done.']], True, {})
       insert_chat(request, current)
@@ -202,6 +204,7 @@ class GeminiPlugin(object):
     if not isinstance(args[1], str):
       return
 
+    self.nvim.request('nvim_echo', [['running inference']], True, {})
     context = args[0]
     win_id = context['win_id']
     pos = context['pos']
@@ -222,7 +225,7 @@ class GeminiPlugin(object):
             result += entry[1]
 
       self.module.handle_async_callback({
-        'result': result,
+        'result': result.strip(),
         'win_id': win_id,
         'row': pos[0],
         'col': pos[1],
