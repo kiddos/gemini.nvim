@@ -49,12 +49,13 @@ M.gemini_complete = function()
     local win = vim.api.nvim_get_current_win()
     local pos = vim.api.nvim_win_get_cursor(win)
 
+    local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
     local prompt = 'Objective: Complete Code at line %d, column %d\n'
-        .. 'Context:\n\n%s\n\n'
-        .. 'Question:\n\nWhat code should be place at line %d, column %d?\n'
+        .. 'Context:\n\n```%s\n%s\n```\n\n'
+        .. 'Question:\n\nWhat code should be place at line %d, column %d?\n\nAnswer:\n\n'
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     local code = vim.fn.join(lines, '\n')
-    prompt = string.format(prompt, pos[1], pos[2], code, pos[1], pos[2])
+    prompt = string.format(prompt, pos[1], pos[2], filetype, code, pos[1], pos[2])
 
     local options = {
       win_id = win,
@@ -63,7 +64,6 @@ M.gemini_complete = function()
       callback = 'show_completion_result',
       extract_code = true,
     }
-    print('run completion')
     vim.api.nvim_call_function('_gemini_api_async', { options, prompt })
   end, config.get_config().instruction_delay)
 end
