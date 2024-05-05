@@ -40,11 +40,11 @@ M.gemini_complete = function()
     context.timer:stop()
   end
 
-  if vim.fn.mode() ~= 'i' then
-    return
-  end
-
   context.timer = vim.defer_fn(function()
+    if vim.fn.mode() ~= 'i' then
+      return
+    end
+
     local bufnr = vim.api.nvim_get_current_buf()
     local win = vim.api.nvim_get_current_win()
     local pos = vim.api.nvim_win_get_cursor(win)
