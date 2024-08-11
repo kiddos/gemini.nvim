@@ -1,6 +1,5 @@
 local config = require('gemini.config')
 local prompt = require('gemini.prompt')
-local completion = require('gemini.completion')
 local chat = require('gemini.chat')
 local hint = require('gemini.hint')
 
@@ -9,9 +8,10 @@ local M = {}
 M.setup = function(opts)
   config.set_config(opts)
 
-  prompt.setup()
-  chat.setup()
-  hint.setup(M)
+  -- prompt.setup()
+  -- chat.setup()
+  -- hint.setup(M)
+  local completion = require('gemini.completion')
   completion.setup(M)
 end
 

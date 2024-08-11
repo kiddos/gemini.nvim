@@ -49,4 +49,30 @@ M.find_node_by_type = function(node_type)
   return nil
 end
 
+M.debounce = function(callback, timeout)
+  local timer = nil
+  local f = function(...)
+    local t = { ... }
+    local handler = function()
+      callback(unpack(t))
+    end
+
+    if timer ~= nil then
+      timer:stop()
+    end
+    timer = vim.defer_fn(handler, timeout)
+  end
+  return f
+end
+
+M.table_get = function(t, id)
+  if type(id) ~= 'table' then return M.table_get(t, { id }) end
+  local success, res = true, t
+  for _, i in ipairs(id) do
+    success, res = pcall(function() return res[i] end)
+    if not success or res == nil then return end
+  end
+  return res
+end
+
 return M

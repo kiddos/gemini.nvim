@@ -1,82 +1,86 @@
+local uv = vim.loop or vim.uv
+
 local config = require('gemini.config')
+local util = require('gemini.util')
 
 local M = {}
 
 local context = {
-  timer = nil,
-  instruction_result = nil,
-  chat = {
-    response_bufnr = nil,
-    input_bufnr = nil,
-  },
   namespace_id = nil,
   completion = nil,
+  pipe = uv.pipe({ noneblock = true }, { noneblock = true })
 }
 
-M.setup = function(module)
+M.setup = function()
   context.namespace_id = vim.api.nvim_create_namespace('gemini_completion')
 
   vim.api.nvim_create_autocmd('CursorMovedI', {
     callback = function()
-      pcall(M.handle_cursor_insert)
+      M.gemini_complete()
     end,
   })
 
-  module.show_completion_result = M.show_completion_result
-
-  vim.api.nvim_set_keymap('i', config.get_config().insert_result_key, '', {
+  vim.api.nvim_set_keymap('i', config.get_config({ 'completion', 'insert_result_key' }) or '<S-Tab>', '', {
     callback = function()
       M.insert_completion_result()
     end,
   })
 end
 
-M.handle_cursor_insert = function()
-  M.gemini_complete()
+M.strip_code = function(text)
+  local code_blocks = {}
+  local pattern = "```(%w+)%s*(.-)%s*```"
+  for _, code_block in text:gmatch(pattern) do
+    table.insert(code_blocks, code_block)
+  end
+  return code_blocks
 end
 
-M.gemini_complete = function()
-  if context.timer then
-    context.timer:stop()
+M.gemini_complete = util.debounce(function()
+  if vim.fn.mode() ~= 'i' then
+    return
   end
 
-  context.timer = vim.defer_fn(function()
-    if vim.fn.mode() ~= 'i' then
-      return
-    end
-
-    local bufnr = vim.api.nvim_get_current_buf()
-    local win = vim.api.nvim_get_current_win()
-    local pos = vim.api.nvim_win_get_cursor(win)
-
-    local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-    local prompt = 'Objective: Complete Code at line %d, column %d\n'
-        .. 'Context:\n\n```%s\n%s\n```\n\n'
-        .. 'Question:\n\nWhat code should be place at line %d, column %d?\n\nAnswer:\n\n'
-    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    local code = vim.fn.join(lines, '\n')
-    prompt = string.format(prompt, pos[1], pos[2], filetype, code, pos[1], pos[2])
-
-    local options = {
-      win_id = win,
-      bufnr = bufnr,
-      pos = pos,
-      callback = 'show_completion_result',
-      extract_code = true,
-    }
-    vim.api.nvim_call_function('_gemini_api_async', { options, prompt })
-  end, config.get_config().instruction_delay)
-end
-
-M.show_completion_result = function(params)
-  local content = params.result
-  local source_win_id = params.win_id
-  local row = params.row
-  local col = params.col
+  local get_prompt = config.get_config({ 'completion', 'get_prompt' })
+  if not get_prompt then
+    return
+  end
 
   local win = vim.api.nvim_get_current_win()
   local pos = vim.api.nvim_win_get_cursor(win)
-  if win ~= source_win_id or pos[1] ~= row or pos[2] ~= col then
+  local prompt = get_prompt()
+
+  -- prepare pipes
+  local write_pipe = uv.new_pipe()
+  write_pipe:open(context.pipe.write)
+  local read_pipe = uv.new_pipe()
+  read_pipe:open(context.pipe.read)
+
+  uv.new_thread(function(prompt, write_pipe)
+    local api = require('gemini.api')
+    local model_response = api.gemini_generate_content(prompt, api.MODELS.GEMINI_1_0_PRO)
+    write_pipe:write(model_response)
+  end, prompt, write_pipe)
+
+  read_pipe:read_start(function(err, chunk)
+    if not err then
+      vim.schedule(function()
+        local code_blocks = M.strip_code(chunk)
+        local single_code_block = vim.fn.join(code_blocks, '\n')
+        M.show_completion_result(single_code_block, win, pos)
+      end)
+    end
+  end)
+end, config.get_config({ 'completion', 'completion_delay' }) or 1000)
+
+M.show_completion_result = function(result, win_id, pos)
+  local win = vim.api.nvim_get_current_win()
+  if win ~= win_id then
+    return
+  end
+
+  local current_pos = vim.api.nvim_win_get_cursor(win)
+  if current_pos[1] ~= pos[1] or current_pos[2] ~= pos[2] then
     return
   end
 
@@ -89,7 +93,6 @@ M.show_completion_result = function(params)
   end
 
   local bufnr = vim.api.nvim_get_current_buf()
-
   local options = {
     id = 1,
     virt_text = {},
@@ -98,6 +101,7 @@ M.show_completion_result = function(params)
     virt_text_pos = 'overlay',
   }
 
+  local content = result
   for i, l in pairs(vim.split(content, '\n')) do
     if i == 1 then
       options.virt_text[1] = { l, 'Comment' }
@@ -105,6 +109,8 @@ M.show_completion_result = function(params)
       options.virt_lines[i - 1] = { { l, 'Comment' } }
     end
   end
+  local row = pos[1]
+  local col = pos[2]
   local id = vim.api.nvim_buf_set_extmark(bufnr, context.namespace_id, row - 1, col, options)
 
   context.completion = {

@@ -1,2 +1,6 @@
 __pycache__
 *.db
+
+lua/gemini/*.so
+.cache
+build
