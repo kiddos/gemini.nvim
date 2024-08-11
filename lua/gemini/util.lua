@@ -1,10 +1,10 @@
-local popup = require('plenary.popup')
 
 local M = {}
 
 M.borderchars = { '─', '│', '─', '│', '╭', '╮', '╯', '╰' }
 
 M.open_window = function(content, options)
+  local popup = require('plenary.popup')
   options.borderchars = M.borderchars
   local win_id, result = popup.create(content, options)
   local bufnr = vim.api.nvim_win_get_buf(win_id)
