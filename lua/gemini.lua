@@ -8,7 +8,6 @@ M.setup = function(opts)
   -- local prompt = require('gemini.prompt')
   require('gemini.chat').setup()
   -- prompt.setup()
-  -- chat.setup()
   require('gemini.hint').setup()
   require('gemini.completion').setup()
 end
