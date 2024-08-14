@@ -10,6 +10,10 @@ local context = {
 }
 
 M.setup = function()
+  if not config.get_config({ 'completion', 'enabled' }) then
+    return
+  end
+
   context.namespace_id = vim.api.nvim_create_namespace('gemini_completion')
 
   vim.api.nvim_create_autocmd('CursorMovedI', {
@@ -45,15 +49,16 @@ M.gemini_complete = util.debounce(function()
     return
   end
 
+  local bufnr = vim.api.nvim_get_current_buf()
   local win = vim.api.nvim_get_current_win()
   local pos = vim.api.nvim_win_get_cursor(win)
-  local user_text = get_prompt()
+  local user_text = get_prompt(bufnr, pos)
 
   local generation_config = {
-    temperature = config.get_config({ 'completion', 'temperature' }) or 0.9,
-    top_k = config.get_config({ 'completion', 'top_k' }) or 1.0,
-    max_output_tokens = config.get_config({ 'completion', 'max_output_tokens' }) or 2048,
-    response_mime_type = config.get_config({ 'completion', 'response_mime_type' }) or 'text/plain',
+    temperature = config.get_config({ 'model', 'temperature' }) or 0.9,
+    top_k = config.get_config({ 'model', 'top_k' }) or 1.0,
+    max_output_tokens = config.get_config({ 'model', 'max_output_tokens' }) or 2048,
+    response_mime_type = config.get_config({ 'model', 'response_mime_type' }) or 'text/plain',
   }
   api.gemini_generate_content(user_text, api.MODELS.GEMINI_1_0_PRO, generation_config, function(result)
     local json_text = result.stdout
@@ -65,7 +70,6 @@ M.gemini_complete = util.debounce(function()
         vim.schedule(function()
           local code_blocks = M.strip_code(model_response)
           local single_code_block = vim.fn.join(code_blocks, '\n')
-          print(single_code_block)
           if #single_code_block > 0 then
             M.show_completion_result(single_code_block, win, pos)
           end

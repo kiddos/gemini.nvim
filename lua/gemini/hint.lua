@@ -1,25 +1,27 @@
 local config = require('gemini.config')
 local util = require('gemini.util')
-local popup = require('plenary.popup')
+local api = require('gemini.api')
 
 local M = {}
 
 local context = {
-  timer = nil,
   hint = nil,
   namespace_id = nil,
 }
 
-M.setup = function(module)
+M.setup = function()
+  if not config.get_config({ 'hints', 'enabled' }) then
+    return
+  end
+
   vim.api.nvim_create_user_command('GeminiFunctionHint', M.show_function_hints, {
     force = true,
     desc = 'Google Gemini function explaination',
   })
 
   context.namespace_id = vim.api.nvim_create_namespace('gemini_hints')
-  module.show_quick_hint_text = M.show_quick_hint_text
 
-  vim.api.nvim_set_keymap('n', config.get_config().insert_result_key, '', {
+  vim.api.nvim_set_keymap('n', config.get_config({ 'hints', 'insert_result_key' }) or '<S-Tab>', '', {
     callback = function()
       M.insert_hint_result()
     end,
@@ -27,11 +29,6 @@ M.setup = function(module)
 end
 
 M.show_function_hints = function()
-  local disabled = os.getenv('DISABLE_GEMINI_INLINE')
-  if disabled then
-    return
-  end
-
   local bufnr = vim.api.nvim_get_current_buf()
   if not util.treesitter_has_lang(bufnr) then
     return
@@ -44,48 +41,55 @@ M.show_function_hints = function()
   end
 end
 
-M.show_quick_hints = function(node, bufnr)
+M.show_quick_hints = util.debounce(function(node, bufnr)
+  local mode = vim.api.nvim_get_mode()
+  if mode.mode ~= 'n' then
+    return
+  end
+
+  local get_prompt = config.get_config({ 'hints', 'get_prompt' })
+  if not get_prompt then
+    return
+  end
+
   local win = vim.api.nvim_get_current_win()
   local row = node:range()
+  local user_text = get_prompt(node, bufnr)
 
+  local generation_config = {
+    temperature = config.get_config({ 'model', 'temperature' }) or 0.9,
+    top_k = config.get_config({ 'model', 'top_k' }) or 1.0,
+    max_output_tokens = config.get_config({ 'model', 'max_output_tokens' }) or 2048,
+    response_mime_type = config.get_config({ 'model', 'response_mime_type' }) or 'text/plain',
+  }
+  api.gemini_generate_content(user_text, api.MODELS.GEMINI_1_0_PRO, generation_config, function(result)
+    local json_text = result.stdout
+    if json_text and #json_text > 0 then
+      local model_response = vim.json.decode(json_text)
+      model_response = util.table_get(model_response, { 'candidates', 1, 'content',
+        'parts', 1, 'text' })
+      if model_response ~= nil and #model_response > 0 then
+        vim.schedule(function()
+          if #model_response > 0 then
+            M.show_quick_hint_text(model_response, win, { row + 1, 1 })
+          end
+        end)
+      end
+    end
+  end)
+end, config.get_config({ 'hints', 'hints_delay' }) or 2000)
+
+M.show_quick_hint_text = function(content, win, pos)
   local mode = vim.api.nvim_get_mode()
   if mode.mode ~= 'n' then
     return
   end
 
-  if context.timer then
-    context.timer:stop()
-  end
+  local row = pos[1]
+  local col = pos[2]
 
-  context.timer = vim.defer_fn(function()
-    local code_block = vim.treesitter.get_node_text(node, bufnr)
-    local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-    local prompt = config.get_hints_prompt()
-    prompt = prompt:gsub('{filetype}', filetype)
-    prompt = prompt:gsub('{code_block}', code_block)
-
-    local options = {
-      win_id = win,
-      pos = { row + 1, 1 },
-      callback = 'show_quick_hint_text',
-    }
-    vim.api.nvim_call_function('_gemini_api_async', { options, prompt })
-  end, config.get_config().hints_delay)
-end
-
-M.show_quick_hint_text = function(params)
-  local mode = vim.api.nvim_get_mode()
-  if mode.mode ~= 'n' then
-    return
-  end
-
-  local content = params.result
-  local source_win_id = params.win_id
-  local row = params.row
-  local col = params.col
-
-  local win = vim.api.nvim_get_current_win()
-  if win ~= source_win_id then
+  local current_win = vim.api.nvim_get_current_win()
+  if current_win ~= win then
     return
   end
 
