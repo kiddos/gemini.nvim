@@ -18,19 +18,8 @@ local default_model_config = {
   response_mime_type = 'text/plain',
 }
 
-local default_completion_config = {
+local default_chat_config = {
   enabled = true,
-  insert_result_key = '<S-Tab>',
-  get_prompt = function(bufnr, pos)
-    local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-    local prompt = 'Objective: Complete Code at line %d, column %d\n'
-        .. 'Context:\n\n```%s\n%s\n```\n\n'
-        .. 'Question:\n\nWhat code should be place at line %d, column %d?\n\nAnswer:\n\n'
-    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    local code = vim.fn.join(lines, '\n')
-    prompt = string.format(prompt, pos[1], pos[2], filetype, code, pos[1], pos[2])
-    return prompt
-  end
 }
 
 local default_hints_config = {
@@ -49,6 +38,21 @@ Instruction: Use 1 or 2 sentences to describe what the following {filetype} func
 ]]
     prompt = prompt:gsub('{filetype}', filetype)
     prompt = prompt:gsub('{code_block}', code_block)
+    return prompt
+  end
+}
+
+local default_completion_config = {
+  enabled = true,
+  insert_result_key = '<S-Tab>',
+  get_prompt = function(bufnr, pos)
+    local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+    local prompt = 'Objective: Complete Code at line %d, column %d\n'
+        .. 'Context:\n\n```%s\n%s\n```\n\n'
+        .. 'Question:\n\nWhat code should be place at line %d, column %d?\n\nAnswer:\n\n'
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local code = vim.fn.join(lines, '\n')
+    prompt = string.format(prompt, pos[1], pos[2], filetype, code, pos[1], pos[2])
     return prompt
   end
 }
@@ -88,12 +92,12 @@ M.set_config = function(opts)
 
   M.config = {
     model = vim.tbl_extend('force', default_model_config, opts.model_config or {}),
-    completion = vim.tbl_extend('force', default_completion_config, opts.completion or {}),
+    chat = vim.tbl_extend('force', default_chat_config, opts.chat_config or {}),
     hints = vim.tbl_extend('force', default_hints_config, opts.hints or {}),
+    completion = vim.tbl_extend('force', default_completion_config, opts.completion or {}),
   }
   -- M.config = vim.tbl_extend('force', default_config, opts)
   -- M.menu_prompts = vim.tbl_extend('force', default_menu_prompts, opts.prompts or {})
-  -- M.hints_prompt = opts.hints_prompt or default_hints_prompt
   -- M.instruction_prompt = opts.instruction_prompt or default_instruction_prompt
 end
 

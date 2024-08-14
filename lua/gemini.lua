@@ -6,7 +6,7 @@ M.setup = function(opts)
   config.set_config(opts)
 
   -- local prompt = require('gemini.prompt')
-  -- local chat = require('gemini.chat')
+  require('gemini.chat').setup()
   -- prompt.setup()
   -- chat.setup()
   require('gemini.hint').setup()
