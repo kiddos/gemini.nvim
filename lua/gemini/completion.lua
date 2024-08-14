@@ -1,14 +1,12 @@
-local uv = vim.loop or vim.uv
-
 local config = require('gemini.config')
 local util = require('gemini.util')
+local api = require('gemini.api')
 
 local M = {}
 
 local context = {
   namespace_id = nil,
   completion = nil,
-  pipe = uv.pipe({ noneblock = true }, { noneblock = true })
 }
 
 M.setup = function()
@@ -43,32 +41,36 @@ M.gemini_complete = util.debounce(function()
 
   local get_prompt = config.get_config({ 'completion', 'get_prompt' })
   if not get_prompt then
+    vim.notify('prompt function is not found', vim.log.levels.WARN)
     return
   end
 
   local win = vim.api.nvim_get_current_win()
   local pos = vim.api.nvim_win_get_cursor(win)
-  local prompt = get_prompt()
+  local user_text = get_prompt()
 
-  -- prepare pipes
-  local write_pipe = uv.new_pipe()
-  write_pipe:open(context.pipe.write)
-  local read_pipe = uv.new_pipe()
-  read_pipe:open(context.pipe.read)
-
-  uv.new_thread(function(prompt, write_pipe)
-    local api = require('gemini.api')
-    local model_response = api.gemini_generate_content(prompt, api.MODELS.GEMINI_1_0_PRO)
-    write_pipe:write(model_response)
-  end, prompt, write_pipe)
-
-  read_pipe:read_start(function(err, chunk)
-    if not err then
-      vim.schedule(function()
-        local code_blocks = M.strip_code(chunk)
-        local single_code_block = vim.fn.join(code_blocks, '\n')
-        M.show_completion_result(single_code_block, win, pos)
-      end)
+  local generation_config = {
+    temperature = config.get_config({ 'completion', 'temperature' }) or 0.9,
+    top_k = config.get_config({ 'completion', 'top_k' }) or 1.0,
+    max_output_tokens = config.get_config({ 'completion', 'max_output_tokens' }) or 2048,
+    response_mime_type = config.get_config({ 'completion', 'response_mime_type' }) or 'text/plain',
+  }
+  api.gemini_generate_content(user_text, api.MODELS.GEMINI_1_0_PRO, generation_config, function(result)
+    local json_text = result.stdout
+    if json_text and #json_text > 0 then
+      local model_response = vim.json.decode(json_text)
+      model_response = util.table_get(model_response, { 'candidates', 1, 'content',
+        'parts', 1, 'text' })
+      if model_response ~= nil and #model_response > 0 then
+        vim.schedule(function()
+          local code_blocks = M.strip_code(model_response)
+          local single_code_block = vim.fn.join(code_blocks, '\n')
+          print(single_code_block)
+          if #single_code_block > 0 then
+            M.show_completion_result(single_code_block, win, pos)
+          end
+        end)
+      end
     end
   end)
 end, config.get_config({ 'completion', 'completion_delay' }) or 1000)
