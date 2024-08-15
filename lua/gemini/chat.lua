@@ -12,6 +12,7 @@ M.setup = function()
   vim.api.nvim_create_user_command('GeminiChat', M.start_chat, {
     force = true,
     desc = 'Google Gemini',
+    nargs = 1,
   })
 end
 

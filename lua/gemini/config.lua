@@ -3,12 +3,6 @@ local util = require('gemini.util')
 
 local M = {}
 
-local default_config = {
-  menu_key = '<C-o>',
-  insert_result_key = '<S-Tab>',
-  instruction_delay = 1000,
-}
-
 local default_model_config = {
   completion_delay = 500,
   model_id = api.MODELS.GEMINI_1_0_PRO,
@@ -20,6 +14,51 @@ local default_model_config = {
 
 local default_chat_config = {
   enabled = true,
+}
+
+local default_instruction_config = {
+  enabled = true,
+  menu_key = '<C-o>',
+  prompts = {
+    {
+      name = 'Unit Test',
+      command_name = 'GeminiUnitTest',
+      menu = 'Unit Test 🚀',
+      get_prompt = function(lines, bufnr)
+        local code = vim.fn.join(lines, '\n')
+        local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+        local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
+            .. 'Objective: Write unit test for the above snippet of code\n'
+        return string.format(prompt, filetype, code)
+      end,
+    },
+    {
+      name = 'Code Review',
+      command_name = 'GeminiCodeReview',
+      menu = 'Code Review 📜',
+      get_prompt = function(lines, bufnr)
+        local code = vim.fn.join(lines, '\n')
+        local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+        local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
+            .. 'Objective: Do a thorough code review for the following code.\n'
+            .. 'Provide detail explaination and sincere comments.\n'
+        return string.format(prompt, filetype, code)
+      end,
+    },
+    {
+      name = 'Code Explain',
+      command_name = 'GeminiCodeExplain',
+      menu = 'Code Explain',
+      get_prompt = function(lines, bufnr)
+        local code = vim.fn.join(lines, '\n')
+        local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+        local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
+            .. 'Objective: Explain the following code.\n'
+            .. 'Provide detail explaination and sincere comments.\n'
+        return string.format(prompt, filetype, code)
+      end,
+    },
+  }
 }
 
 local default_hints_config = {
@@ -57,36 +96,6 @@ local default_completion_config = {
   end
 }
 
-local default_menu_prompts = {
-  {
-    name = 'Unit Test Generation',
-    command_name = 'GeminiUnitTest',
-    menu = 'Unit Test 🚀',
-    prompt = 'Write unit tests for the following code\n',
-  },
-  {
-    name = 'Code Review',
-    command_name = 'GeminiCodeReview',
-    menu = 'Code Review 📜',
-    prompt = 'Do a thorough code review for the following code.\nProvide detail explaination and sincere comments.\n',
-  },
-  {
-    name = 'Code Explain',
-    command_name = 'GeminiCodeExplain',
-    menu = 'Code Explain 👻',
-    prompt = 'Explain the following code\nprovide the answer in Markdown\n',
-  },
-}
-
-
-local default_instruction_prompt = [[
-Context: filename: `{filename}`
-
-Instruction: ***{instruction}***
-
-]]
-
-
 M.set_config = function(opts)
   opts = opts or {}
 
@@ -95,30 +104,12 @@ M.set_config = function(opts)
     chat = vim.tbl_extend('force', default_chat_config, opts.chat_config or {}),
     hints = vim.tbl_extend('force', default_hints_config, opts.hints or {}),
     completion = vim.tbl_extend('force', default_completion_config, opts.completion or {}),
+    instruction = vim.tbl_extend('force', default_instruction_config, opts.instruction or {}),
   }
-  -- M.config = vim.tbl_extend('force', default_config, opts)
-  -- M.menu_prompts = vim.tbl_extend('force', default_menu_prompts, opts.prompts or {})
-  -- M.instruction_prompt = opts.instruction_prompt or default_instruction_prompt
 end
 
 M.get_config = function(keys)
   return util.table_get(M.config, keys)
-end
-
-M.get_menu_prompts = function()
-  return M.menu_prompts or {}
-end
-
-M.get_hints_prompt = function()
-  return M.hints_prompt
-end
-
-M.get_instruction_prompt = function()
-  return M.instruction_prompt
-end
-
-M.get_completion_prompt = function()
-  return M.instruction_prompt
 end
 
 return M
