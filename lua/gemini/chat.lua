@@ -35,6 +35,10 @@ M.start_chat = function(context)
   api.gemini_generate_content_stream(user_text, model_id, generation_config, function(json_text)
     local model_response = vim.json.decode(json_text)
     model_response = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
+    if not model_response then
+      return
+    end
+
     text = text .. model_response
     vim.schedule(function()
       lines = vim.split(text, '\n')
