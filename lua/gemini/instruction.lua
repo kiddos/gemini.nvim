@@ -24,7 +24,7 @@ M.setup = function()
       local bufnr = vim.api.nvim_get_current_buf()
       local lines
       if not context.line1 or not context.line2 or context.line1 == context.line2 then
-        lines = vim.api.nvim_buf_get_lines(bufnr, 0, - 1, false)
+        lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
       else
         lines = vim.api.nvim_buf_get_lines(bufnr, context.line1 - 1, context.line2 - 1, false)
       end
@@ -39,6 +39,7 @@ M.setup = function()
 
       vim.api.nvim_command('tabnew')
       local new_buf = vim.api.nvim_get_current_buf()
+      vim.api.nvim_set_option_value('filetype', 'markdown', { buf = new_buf })
       local text = ''
       api.gemini_generate_content_stream(user_text, api.MODELS.GEMINI_1_5_FLASH, generation_config, function(json_text)
         local model_response = vim.json.decode(json_text)
@@ -62,7 +63,7 @@ M.setup = function()
     end
   end
 
-  for _, item in pairs(config.get_config({'instruction', 'prompts'}) or {}) do
+  for _, item in pairs(config.get_config({ 'instruction', 'prompts' }) or {}) do
     register_menu(item)
   end
 
@@ -81,7 +82,7 @@ M.setup = function()
 
   local modes = { 'n' }
   for _, mode in pairs(modes) do
-    register_keymap(mode, config.get_config({'instruction', 'menu_key'}) or '<C-O>')
+    register_keymap(mode, config.get_config({ 'instruction', 'menu_key' }) or '<C-O>')
   end
 end
 
