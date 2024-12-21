@@ -52,7 +52,6 @@ export GEMINI_API_KEY="<your API key here>"
 ```lua
 {
   'kiddos/gemini.nvim',
-  build = { 'pip install -r requirements.txt', ':UpdateRemotePlugins' },
   config = function()
     require('gemini').setup()
   end
@@ -66,7 +65,6 @@ export GEMINI_API_KEY="<your API key here>"
 ```lua
 use {
   'kiddos/gemini.nvim',
-  run = { 'pip install -r requirements.txt', ':UpdateRemotePlugins' },
   config = function()
     require('gemini').setup()
   end,
@@ -74,3 +72,98 @@ use {
 ```
 
 ## Settings
+
+default setting
+
+```lua
+{
+  model_config = {
+    completion_delay = 1000,
+    model_id = api.MODELS.GEMINI_1_5_FLASH,
+    temperature = 0.01,
+    top_k = 1.0,
+    max_output_tokens = 8196,
+    response_mime_type = 'text/plain',
+  },
+  chat_config = {
+    enabled = true,
+  },
+  hints = {
+    enabled = true,
+    hints_delay = 2000,
+    insert_result_key = '<S-Tab>',
+    get_prompt = function(node, bufnr)
+      local code_block = vim.treesitter.get_node_text(node, bufnr)
+      local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+      local prompt = "
+  Instruction: Use 1 or 2 sentences to describe what the following {filetype} function does:
+  
+  ```{filetype}
+  {code_block}
+  ```",
+      prompt = prompt:gsub('{filetype}', filetype)
+      prompt = prompt:gsub('{code_block}', code_block)
+      return prompt
+    end
+  }
+  completion = {
+    enabled = true,
+    insert_result_key = '<S-Tab>',
+    get_prompt = function(bufnr, pos)
+      local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+      local prompt = 'Objective: Complete Code at line %d, column %d\n'
+          .. 'Context:\n\n```%s\n%s\n```\n\n'
+          .. 'Question:\n\nWhat code should be place at line %d, column %d?\n\nAnswer:\n\n'
+      local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+      local code = vim.fn.join(lines, '\n')
+      prompt = string.format(prompt, pos[1], pos[2], filetype, code, pos[1], pos[2])
+      return prompt
+    end
+  },
+  instruction = {
+    enabled = true,
+    menu_key = '<C-o>',
+    prompts = {
+      {
+        name = 'Unit Test',
+        command_name = 'GeminiUnitTest',
+        menu = 'Unit Test 🚀',
+        get_prompt = function(lines, bufnr)
+          local code = vim.fn.join(lines, '\n')
+          local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+          local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
+              .. 'Objective: Write unit test for the above snippet of code\n'
+          return string.format(prompt, filetype, code)
+        end,
+      },
+      {
+        name = 'Code Review',
+        command_name = 'GeminiCodeReview',
+        menu = 'Code Review 📜',
+        get_prompt = function(lines, bufnr)
+          local code = vim.fn.join(lines, '\n')
+          local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+          local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
+              .. 'Objective: Do a thorough code review for the following code.\n'
+              .. 'Provide detail explaination and sincere comments.\n'
+          return string.format(prompt, filetype, code)
+        end,
+      },
+      {
+        name = 'Code Explain',
+        command_name = 'GeminiCodeExplain',
+        menu = 'Code Explain',
+        get_prompt = function(lines, bufnr)
+          local code = vim.fn.join(lines, '\n')
+          local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+          local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
+              .. 'Objective: Explain the following code.\n'
+              .. 'Provide detail explaination and sincere comments.\n'
+          return string.format(prompt, filetype, code)
+        end,
+      },
+    },
+  },
+}
+```
+
