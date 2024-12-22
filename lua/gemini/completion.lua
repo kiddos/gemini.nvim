@@ -53,6 +53,9 @@ M.gemini_complete = util.debounce(function()
   local win = vim.api.nvim_get_current_win()
   local pos = vim.api.nvim_win_get_cursor(win)
   local user_text = get_prompt(bufnr, pos)
+  if not user_text then
+    return
+  end
 
   local generation_config = {
     temperature = config.get_config({ 'model', 'temperature' }) or 0.9,
@@ -60,7 +63,9 @@ M.gemini_complete = util.debounce(function()
     max_output_tokens = config.get_config({ 'model', 'max_output_tokens' }) or 2048,
     response_mime_type = config.get_config({ 'model', 'response_mime_type' }) or 'text/plain',
   }
-  api.gemini_generate_content(user_text, api.MODELS.GEMINI_1_0_PRO, generation_config, function(result)
+
+  local model_id = config.get_config({ 'model', 'model_id' })
+  api.gemini_generate_content(user_text, model_id, generation_config, function(result)
     local json_text = result.stdout
     if json_text and #json_text > 0 then
       local model_response = vim.json.decode(json_text)
@@ -87,10 +92,6 @@ M.show_completion_result = function(result, win_id, pos)
 
   local current_pos = vim.api.nvim_win_get_cursor(win)
   if current_pos[1] ~= pos[1] or current_pos[2] ~= pos[2] then
-    return
-  end
-
-  if vim.fn.pumvisible() ~= 0 then
     return
   end
 
@@ -152,7 +153,7 @@ M.insert_completion_result = function()
   local first_line = vim.api.nvim_buf_get_lines(0, row, row + 1, false)[1]
   local lines = vim.split(context.completion.content, '\n')
   lines[1] = string.sub(first_line, 1, col) .. lines[1]
-  vim.api.nvim_buf_set_lines(bufnr, row, row, false, lines)
+  vim.api.nvim_buf_set_lines(bufnr, row, row + 1, false, lines)
   context.completion = nil
 end
 
