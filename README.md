@@ -111,12 +111,20 @@ default setting
     insert_result_key = '<S-Tab>',
     get_prompt = function(bufnr, pos)
       local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-      local prompt = 'Objective: Complete Code at line %d, column %d\n'
-          .. 'Context:\n\n```%s\n%s\n```\n\n'
-          .. 'Question:\n\nWhat code should be place at line %d, column %d?\n\nAnswer:\n\n'
+      local prompt = 'Below is a %s file:\n'
+          .. '```%s\n%s\n```\n\n'
+          .. 'Instruction:\nWhat code should be place at <insert_here></insert_here>?\n'
       local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+      local line = pos[1]
+      local col = pos[2]
+      local target_line = lines[line]
+      if target_line then
+        lines[line] = target_line:sub(1, col) .. '<insert_here></insert_here>' .. target_line:sub(col + 1)
+      else
+        return nil
+      end
       local code = vim.fn.join(lines, '\n')
-      prompt = string.format(prompt, pos[1], pos[2], filetype, code, pos[1], pos[2])
+      prompt = string.format(prompt, filetype, filetype, code)
       return prompt
     end
   },
