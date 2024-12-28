@@ -82,7 +82,7 @@ M.setup = function()
 
   local modes = { 'n' }
   for _, mode in pairs(modes) do
-    register_keymap(mode, config.get_config({ 'instruction', 'menu_key' }) or '<C-O>')
+    register_keymap(mode, config.get_config({ 'instruction', 'menu_key' }) or '<Leader><Leader><Leader>g')
   end
 end
 
