@@ -75,4 +75,13 @@ M.table_get = function(t, id)
   return res
 end
 
+M.is_blacklisted = function(blacklist, filetype)
+  for _, ft in ipairs(blacklist) do
+    if string.find(filetype, ft, 1, true) ~= nil then
+      return true
+    end
+  end
+  return false
+end
+
 return M

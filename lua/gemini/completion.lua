@@ -14,10 +14,20 @@ M.setup = function()
     return
   end
 
+  local blacklist_filetypes = config.get_config({ 'completion', 'blacklist_filetypes' }) or {}
+  local blacklist_filenames = config.get_config({ 'completion', 'blacklist_filenames' }) or {}
+
   context.namespace_id = vim.api.nvim_create_namespace('gemini_completion')
 
   vim.api.nvim_create_autocmd('CursorMovedI', {
     callback = function()
+      local buf = vim.api.nvim_get_current_buf()
+      local filetype = vim.api.nvim_get_option_value('filetype', { buf = buf })
+      local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t")
+      if util.is_blacklisted(blacklist_filetypes, filetype) or util.is_blacklisted(blacklist_filenames, filename) then
+        return
+      end
+      print('-- gemini complete --')
       M.gemini_complete()
     end,
   })
