@@ -53,6 +53,10 @@ M.gemini_complete = util.debounce(function()
     return
   end
 
+  if vim.fn.pumvisible() == 1 then
+    return
+  end
+
   local get_prompt = config.get_config({ 'completion', 'get_prompt' })
   if not get_prompt then
     vim.notify('prompt function is not found', vim.log.levels.WARN)
@@ -106,6 +110,10 @@ M.show_completion_result = function(result, win_id, pos)
   end
 
   if vim.fn.mode() ~= 'i' then
+    return
+  end
+
+  if vim.fn.pumvisible() == 1 then
     return
   end
 
