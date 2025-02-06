@@ -4,8 +4,7 @@ local util = require('gemini.util')
 local M = {}
 
 local default_model_config = {
-  completion_delay = 600,
-  model_id = api.MODELS.GEMINI_1_5_FLASH,
+  model_id = api.MODELS.GEMINI_2_0_FLASH,
   temperature = 0.01,
   top_k = 1.0,
   max_output_tokens = 8196,
@@ -85,6 +84,7 @@ local default_completion_config = {
   enabled = true,
   blacklist_filetypes = { 'help', 'qf', 'json', 'yaml', 'toml' },
   blacklist_filenames = { '.env' },
+  completion_delay = 600,
   insert_result_key = '<S-Tab>',
   get_prompt = function(bufnr, pos)
     local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
