@@ -24,12 +24,7 @@ M.start_chat = function(context)
   local lines = { 'Generating response...' }
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
-  local generation_config = {
-    temperature = config.get_config({ 'model', 'temperature' }) or 0.9,
-    top_k = config.get_config({ 'model', 'top_k' }) or 1.0,
-    max_output_tokens = config.get_config({ 'model', 'max_output_tokens' }) or 2048,
-    response_mime_type = config.get_config({ 'model', 'response_mime_type' }) or 'text/plain',
-  }
+  local generation_config = config.get_gemini_generation_config()
   local text = ''
   local model_id = config.get_config({ 'model', 'model_id' })
   api.gemini_generate_content_stream(user_text, model_id, generation_config, function(json_text)

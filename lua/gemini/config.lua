@@ -5,8 +5,8 @@ local M = {}
 
 local default_model_config = {
   model_id = api.MODELS.GEMINI_2_0_FLASH,
-  temperature = 0.01,
-  top_k = 1.0,
+  temperature = 0.2,
+  top_k = 20,
   max_output_tokens = 8196,
   response_mime_type = 'text/plain',
 }
@@ -125,6 +125,15 @@ end
 
 M.get_config = function(keys)
   return util.table_get(M.config, keys)
+end
+
+M.get_gemini_generation_config = function()
+  return {
+    temperature = M.get_config({ 'model', 'temperature' }) or 0.9,
+    top_k = M.get_config({ 'model', 'top_k' }) or 1.0,
+    max_output_tokens = M.get_config({ 'model', 'max_output_tokens' }) or 8196,
+    response_mime_type = M.get_config({ 'model', 'response_mime_type' }) or 'text/plain',
+  }
 end
 
 return M

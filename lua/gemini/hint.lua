@@ -56,12 +56,7 @@ M.show_quick_hints = util.debounce(function(node, bufnr)
   local row = node:range()
   local user_text = get_prompt(node, bufnr)
 
-  local generation_config = {
-    temperature = config.get_config({ 'model', 'temperature' }) or 0.9,
-    top_k = config.get_config({ 'model', 'top_k' }) or 1.0,
-    max_output_tokens = config.get_config({ 'model', 'max_output_tokens' }) or 2048,
-    response_mime_type = config.get_config({ 'model', 'response_mime_type' }) or 'text/plain',
-  }
+  local generation_config = config.get_gemini_generation_config()
   local model_id = config.get_config({ 'model', 'model_id' })
   api.gemini_generate_content(user_text, nil, model_id, generation_config, function(result)
     local json_text = result.stdout

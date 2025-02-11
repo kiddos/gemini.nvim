@@ -72,20 +72,13 @@ M._gemini_complete = function()
     system_text = get_system_text()
   end
 
-  local generation_config = {
-    temperature = config.get_config({ 'model', 'temperature' }) or 0.9,
-    top_k = config.get_config({ 'model', 'top_k' }) or 1.0,
-    max_output_tokens = config.get_config({ 'model', 'max_output_tokens' }) or 2048,
-    response_mime_type = config.get_config({ 'model', 'response_mime_type' }) or 'text/plain',
-  }
-
+  local generation_config = config.get_gemini_generation_config()
   local model_id = config.get_config({ 'model', 'model_id' })
   api.gemini_generate_content(user_text, system_text, model_id, generation_config, function(result)
     local json_text = result.stdout
     if json_text and #json_text > 0 then
       local model_response = vim.json.decode(json_text)
-      model_response = util.table_get(model_response, { 'candidates', 1, 'content',
-        'parts', 1, 'text' })
+      model_response = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
       if model_response ~= nil and #model_response > 0 then
         vim.schedule(function()
           print(model_response)

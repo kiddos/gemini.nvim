@@ -30,12 +30,7 @@ M.setup = function()
       end
       local user_text = get_prompt(lines, bufnr)
 
-      local generation_config = {
-        temperature = config.get_config({ 'model', 'temperature' }) or 0.9,
-        top_k = config.get_config({ 'model', 'top_k' }) or 1.0,
-        max_output_tokens = config.get_config({ 'model', 'max_output_tokens' }) or 2048,
-        response_mime_type = config.get_config({ 'model', 'response_mime_type' }) or 'text/plain',
-      }
+      local generation_config = config.get_gemini_generation_config()
 
       vim.api.nvim_command('tabnew')
       local new_buf = vim.api.nvim_get_current_buf()
