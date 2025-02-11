@@ -40,8 +40,9 @@ M.setup = function()
       vim.api.nvim_command('tabnew')
       local new_buf = vim.api.nvim_get_current_buf()
       vim.api.nvim_set_option_value('filetype', 'markdown', { buf = new_buf })
+      local model_id = config.get_config({ 'model', 'model_id' })
       local text = ''
-      api.gemini_generate_content_stream(user_text, api.MODELS.GEMINI_1_5_FLASH, generation_config, function(json_text)
+      api.gemini_generate_content_stream(user_text, model_id, generation_config, function(json_text)
         local model_response = vim.json.decode(json_text)
         model_response = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
         text = text .. model_response
