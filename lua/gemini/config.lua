@@ -86,11 +86,15 @@ local default_completion_config = {
   blacklist_filenames = { '.env' },
   completion_delay = 600,
   insert_result_key = '<S-Tab>',
+  get_system_text = function()
+    return "You are a coding AI assistant that autocomplete user's code at a specific cursor location marked by <insert_here></insert_here>."
+      .. '\nDo not wrap the code in ```'
+  end,
   get_prompt = function(bufnr, pos)
     local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-    local prompt = 'Below is a %s file:\n'
+    local prompt = 'Below is the content of a %s file `%s`:\n'
         .. '```%s\n%s\n```\n\n'
-        .. 'Instruction:\nWhat code should be place at <insert_here></insert_here>?\n'
+        .. 'Insert the most likely appear code at <insert_here></insert_here>.\n'
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     local line = pos[1]
     local col = pos[2]
@@ -101,7 +105,8 @@ local default_completion_config = {
       return nil
     end
     local code = vim.fn.join(lines, '\n')
-    prompt = string.format(prompt, filetype, filetype, code)
+    local filename = vim.api.nvim_buf_get_name(bufnr)
+    prompt = string.format(prompt, filetype, filename, filetype, code)
     return prompt
   end
 }

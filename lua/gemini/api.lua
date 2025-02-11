@@ -14,26 +14,38 @@ M.MODELS = {
   GEMINI_1_5_PRO = 'gemini-1.5-pro',
 }
 
-M.gemini_generate_content = function(user_text, model_name, generation_config, callback)
+M.gemini_generate_content = function(user_text, system_text, model_name, generation_config, callback)
   local api_key = os.getenv("GEMINI_API_KEY")
   if not api_key then
     return ''
   end
 
   local api = API .. model_name .. ':generateContent?key=' .. api_key
-  local data = {
-    contents = {
-      {
-        role = 'user',
-        parts = {
-          {
-            text = user_text
-          }
+  local contents = {
+    {
+      role = 'user',
+      parts = {
+        {
+          text = user_text
         }
       }
-    },
+    }
+  }
+  local data = {
+    contents = contents,
     generationConfig = generation_config,
   }
+  if system_text then
+    data.systemInstruction = {
+      role = 'user',
+      parts = {
+        {
+          text = system_text,
+        }
+      }
+    }
+  end
+
   local json_text = vim.json.encode(data)
   local cmd = { 'curl', api, '-X', 'POST', '-s', '-H', 'Content-Type: application/json', '-d', json_text }
   local opts = { text = true }

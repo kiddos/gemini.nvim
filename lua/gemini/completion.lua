@@ -48,27 +48,28 @@ M.strip_code = function(text)
   return code_blocks
 end
 
-M.gemini_complete = util.debounce(function()
-  if vim.fn.mode() ~= 'i' then
-    return
-  end
-
-  if vim.fn.pumvisible() == 1 then
-    return
-  end
-
+local get_prompt_text = function(bufnr, pos)
   local get_prompt = config.get_config({ 'completion', 'get_prompt' })
   if not get_prompt then
     vim.notify('prompt function is not found', vim.log.levels.WARN)
-    return
+    return nil
   end
+  return get_prompt(bufnr, pos)
+end
 
+M._gemini_complete = function()
   local bufnr = vim.api.nvim_get_current_buf()
   local win = vim.api.nvim_get_current_win()
   local pos = vim.api.nvim_win_get_cursor(win)
-  local user_text = get_prompt(bufnr, pos)
+  local user_text = get_prompt_text(bufnr, pos)
   if not user_text then
     return
+  end
+
+  local system_text = nil
+  local get_system_text = config.get_config({ 'completion', 'get_system_text' })
+  if get_system_text then
+    system_text = get_system_text()
   end
 
   local generation_config = {
@@ -79,7 +80,7 @@ M.gemini_complete = util.debounce(function()
   }
 
   local model_id = config.get_config({ 'model', 'model_id' })
-  api.gemini_generate_content(user_text, model_id, generation_config, function(result)
+  api.gemini_generate_content(user_text, system_text, model_id, generation_config, function(result)
     local json_text = result.stdout
     if json_text and #json_text > 0 then
       local model_response = vim.json.decode(json_text)
@@ -87,15 +88,26 @@ M.gemini_complete = util.debounce(function()
         'parts', 1, 'text' })
       if model_response ~= nil and #model_response > 0 then
         vim.schedule(function()
-          local code_blocks = M.strip_code(model_response)
-          local single_code_block = vim.fn.join(code_blocks, '\n')
-          if #single_code_block > 0 then
-            M.show_completion_result(single_code_block, win, pos)
+          print(model_response)
+          if model_response then
+            M.show_completion_result(model_response, win, pos)
           end
         end)
       end
     end
   end)
+end
+
+M.gemini_complete = util.debounce(function()
+  if vim.fn.mode() ~= 'i' then
+    return
+  end
+
+  if vim.fn.pumvisible() == 1 then
+    return
+  end
+
+  M._gemini_complete()
 end, config.get_config({ 'completion', 'completion_delay' }) or 1000)
 
 M.show_completion_result = function(result, win_id, pos)
