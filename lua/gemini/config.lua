@@ -86,6 +86,7 @@ local default_completion_config = {
   blacklist_filenames = { '.env' },
   completion_delay = 600,
   insert_result_key = '<S-Tab>',
+  move_cursor_end = false,
   get_system_text = function()
     return "You are a coding AI assistant that autocomplete user's code at a specific cursor location marked by <insert_here></insert_here>."
       .. '\nDo not wrap the code in ```'
