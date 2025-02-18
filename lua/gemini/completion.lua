@@ -176,9 +176,12 @@ M.insert_completion_result = function()
   local lines = vim.split(context.completion.content, '\n')
   lines[1] = string.sub(first_line, 1, col) .. lines[1] .. string.sub(first_line, col + 1)
   vim.api.nvim_buf_set_lines(bufnr, row, row + 1, false, lines)
-  local last_row = row + #lines
-  local last_col = #lines[#lines]
-  vim.api.nvim_win_set_cursor(0, { last_row, last_col })
+
+  if config.get_config({ 'completion', 'move_cursor_end' }) == true then
+    local new_row = row + #lines
+    local new_col = #vim.api.nvim_buf_get_lines(0, new_row - 1, new_row, false)[1]
+    vim.api.nvim_win_set_cursor(0, { new_row, new_col })
+  end
 
   context.completion = nil
 end
