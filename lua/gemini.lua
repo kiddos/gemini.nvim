@@ -14,6 +14,7 @@ M.setup = function(opts)
   require('gemini.instruction').setup()
   require('gemini.hint').setup()
   require('gemini.completion').setup()
+  require('gemini.task').setup()
 end
 
 return M

@@ -112,6 +112,37 @@ local default_completion_config = {
   end
 }
 
+local default_task_config = {
+  enabled = true,
+  get_system_text = function()
+    return 'You are an AI assistant that helps user write code.\n'
+      .. 'Your output should be a code diff for git.'
+  end,
+  get_prompt = function(bufnr, user_prompt)
+    local buffers = vim.api.nvim_list_bufs()
+    local file_contents = {}
+
+    for _, b in ipairs(buffers) do
+      if vim.api.nvim_buf_is_loaded(b) then -- Only get content from loaded buffers
+        local lines = vim.api.nvim_buf_get_lines(b, 0, -1, false)
+        local filename = vim.api.nvim_buf_get_name(b)
+        filename = vim.fn.fnamemodify(filename, ":.")
+        local filetype = vim.api.nvim_get_option_value('filetype', { buf = b })
+        local file_content = table.concat(lines, "\n")
+        file_content = string.format("`%s`:\n\n```%s\n%s\n```\n\n", filename, filetype, file_content)
+        table.insert(file_contents, file_content)
+      end
+    end
+
+    local current_filepath = vim.api.nvim_buf_get_name(bufnr)
+    current_filepath = vim.fn.fnamemodify(current_filepath, ":.")
+
+    local context = table.concat(file_contents, "\n\n")
+    return string.format('%s\n\nCurrent Opened File: %s\n\nTask: %s',
+      context, current_filepath, user_prompt)
+  end
+}
+
 M.set_config = function(opts)
   opts = opts or {}
 
@@ -121,6 +152,7 @@ M.set_config = function(opts)
     hints = vim.tbl_extend('force', default_hints_config, opts.hints or {}),
     completion = vim.tbl_extend('force', default_completion_config, opts.completion or {}),
     instruction = vim.tbl_extend('force', default_instruction_config, opts.instruction or {}),
+    task = vim.tbl_extend('force', default_task_config, opts.task or {})
   }
 end
 

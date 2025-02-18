@@ -83,4 +83,13 @@ M.is_blacklisted = function(blacklist, filetype)
   return false
 end
 
+M.strip_code = function(text)
+  local code_blocks = {}
+  local pattern = "```(%w+)%s*(.-)%s*```"
+  for _, code_block in text:gmatch(pattern) do
+    table.insert(code_blocks, code_block)
+  end
+  return code_blocks
+end
+
 return M

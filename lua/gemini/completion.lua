@@ -39,15 +39,6 @@ M.setup = function()
   })
 end
 
-M.strip_code = function(text)
-  local code_blocks = {}
-  local pattern = "```(%w+)%s*(.-)%s*```"
-  for _, code_block in text:gmatch(pattern) do
-    table.insert(code_blocks, code_block)
-  end
-  return code_blocks
-end
-
 local get_prompt_text = function(bufnr, pos)
   local get_prompt = config.get_config({ 'completion', 'get_prompt' })
   if not get_prompt then
