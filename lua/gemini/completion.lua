@@ -81,7 +81,6 @@ M._gemini_complete = function()
       model_response = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
       if model_response ~= nil and #model_response > 0 then
         vim.schedule(function()
-          print(model_response)
           if model_response then
             M.show_completion_result(model_response, win, pos)
           end
@@ -128,10 +127,10 @@ M.show_completion_result = function(result, win_id, pos)
     virt_text = {},
     virt_lines = {},
     hl_mode = 'combine',
-    virt_text_pos = 'overlay',
+    virt_text_pos = 'inline',
   }
 
-  local content = result
+  local content = result:match("^%s*(.-)%s*$")
   for i, l in pairs(vim.split(content, '\n')) do
     if i == 1 then
       options.virt_text[1] = { l, 'Comment' }
@@ -175,12 +174,11 @@ M.insert_completion_result = function()
   local col = context.completion.col
   local first_line = vim.api.nvim_buf_get_lines(0, row, row + 1, false)[1]
   local lines = vim.split(context.completion.content, '\n')
-  lines[1] = string.sub(first_line, 1, col) .. lines[1]
+  lines[1] = string.sub(first_line, 1, col) .. lines[1] .. string.sub(first_line, col + 1)
   vim.api.nvim_buf_set_lines(bufnr, row, row + 1, false, lines)
 
   if config.get_config({ 'completion', 'move_cursor_end' }) == true then
-    local last_line = lines[#lines]
-    local new_row = row + #lines - 1
+    local new_row = row + #lines
     local new_col = #vim.api.nvim_buf_get_lines(0, new_row - 1, new_row, false)[1]
     vim.api.nvim_win_set_cursor(0, { new_row, new_col })
   end
