@@ -87,9 +87,9 @@ default setting
 {
   model_config = {
     completion_delay = 1000,
-    model_id = api.MODELS.GEMINI_1_5_FLASH,
-    temperature = 0.01,
-    top_k = 1.0,
+    model_id = api.MODELS.GEMINI_2_0_FLASH,
+    temperature = 0.2,
+    top_k = 20,
     max_output_tokens = 8196,
     response_mime_type = 'text/plain',
   },
@@ -116,7 +116,15 @@ default setting
   }
   completion = {
     enabled = true,
+    blacklist_filetypes = { 'help', 'qf', 'json', 'yaml', 'toml' },
+    blacklist_filenames = { '.env' },
+    completion_delay = 600,
+    move_cursor_end = false,
     insert_result_key = '<S-Tab>',
+    get_system_text = function()
+      return "You are a coding AI assistant that autocomplete user's code at a specific cursor location marked by <insert_here></insert_here>."
+        .. '\nDo not wrap the code in ```'
+    end,
     get_prompt = function(bufnr, pos)
       local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
       local prompt = 'Below is a %s file:\n'
@@ -180,6 +188,35 @@ default setting
       },
     },
   },
+  task = {
+    enabled = true,
+    get_system_text = function()
+      return 'You are an AI assistant that helps user write code.\n'
+        .. 'Your output should be a code diff for git.'
+    end,
+    get_prompt = function(bufnr, user_prompt)
+      local buffers = vim.api.nvim_list_bufs()
+      local file_contents = {}
+
+      for _, b in ipairs(buffers) do
+        if vim.api.nvim_buf_is_loaded(b) then -- Only get content from loaded buffers
+          local lines = vim.api.nvim_buf_get_lines(b, 0, -1, false)
+          local filename = vim.api.nvim_buf_get_name(b)
+          filename = vim.fn.fnamemodify(filename, ":.")
+          local filetype = vim.api.nvim_get_option_value('filetype', { buf = b })
+          local file_content = table.concat(lines, "\n")
+          file_content = string.format("`%s`:\n\n```%s\n%s\n```\n\n", filename, filetype, file_content)
+          table.insert(file_contents, file_content)
+        end
+      end
+
+      local current_filepath = vim.api.nvim_buf_get_name(bufnr)
+      current_filepath = vim.fn.fnamemodify(current_filepath, ":.")
+
+      local context = table.concat(file_contents, "\n\n")
+      return string.format('%s\n\nCurrent Opened File: %s\n\nTask: %s',
+        context, current_filepath, user_prompt)
+    end
+  },
 }
 ```
-
