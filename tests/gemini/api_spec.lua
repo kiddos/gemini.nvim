@@ -9,9 +9,10 @@ describe('api', function()
       max_output_tokens = 2048,
       response_mime_type = 'text/plain',
     }
-    local future = api.gemini_generate_content('hello there', api.MODELS.GEMINI_1_0_PRO, generation_config, nil)
+    local future = api.gemini_generate_content('hello there', nil, api.MODELS.GEMINI_2_0_FLASH, generation_config, nil)
     local result = future:wait()
     local stdout = result.stdout
+    print(stdout)
     assert(#stdout > 0)
 
     local result = vim.json.decode(stdout)
