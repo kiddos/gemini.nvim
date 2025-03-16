@@ -87,6 +87,9 @@ local default_completion_config = {
   completion_delay = 600,
   insert_result_key = '<S-Tab>',
   move_cursor_end = false,
+  can_complete = function()
+    return vim.fn.pumvisible() ~= 1
+  end,
   get_system_text = function()
     return "You are a coding AI assistant that autocomplete user's code at a specific cursor location marked by <insert_here></insert_here>."
       .. '\nDo not wrap the code in ```'
@@ -147,12 +150,12 @@ M.set_config = function(opts)
   opts = opts or {}
 
   M.config = {
-    model = vim.tbl_extend('force', default_model_config, opts.model_config or {}),
-    chat = vim.tbl_extend('force', default_chat_config, opts.chat_config or {}),
-    hints = vim.tbl_extend('force', default_hints_config, opts.hints or {}),
-    completion = vim.tbl_extend('force', default_completion_config, opts.completion or {}),
-    instruction = vim.tbl_extend('force', default_instruction_config, opts.instruction or {}),
-    task = vim.tbl_extend('force', default_task_config, opts.task or {})
+    model = vim.tbl_deep_extend('force', {}, default_model_config, opts.model_config or {}),
+    chat = vim.tbl_deep_extend('force', {}, default_chat_config, opts.chat_config or {}),
+    hints = vim.tbl_deep_extend('force', {}, default_hints_config, opts.hints or {}),
+    completion = vim.tbl_deep_extend('force', {}, default_completion_config, opts.completion or {}),
+    instruction = vim.tbl_deep_extend('force', {}, default_instruction_config, opts.instruction or {}),
+    task = vim.tbl_deep_extend('force', {}, default_task_config, opts.task or {})
   }
 end
 

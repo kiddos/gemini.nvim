@@ -86,7 +86,8 @@ M.gemini_complete = util.debounce(function()
     return
   end
 
-  if vim.fn.pumvisible() == 1 then
+  local can_complete = config.get_config({'completion', 'can_complete'})
+  if not can_complete or not can_complete() then
     return
   end
 
@@ -108,7 +109,8 @@ M.show_completion_result = function(result, win_id, pos)
     return
   end
 
-  if vim.fn.pumvisible() == 1 then
+  local can_complete = config.get_config({'completion', 'can_complete'})
+  if not can_complete or not can_complete() then
     return
   end
 
