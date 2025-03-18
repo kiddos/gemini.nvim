@@ -27,7 +27,6 @@ M.setup = function()
       if util.is_blacklisted(blacklist_filetypes, filetype) or util.is_blacklisted(blacklist_filenames, filename) then
         return
       end
-      print('-- gemini complete --')
       M.gemini_complete()
     end,
   })
@@ -91,6 +90,7 @@ M.gemini_complete = util.debounce(function()
     return
   end
 
+  print('-- gemini complete --')
   M._gemini_complete()
 end, config.get_config({ 'completion', 'completion_delay' }) or 1000)
 
