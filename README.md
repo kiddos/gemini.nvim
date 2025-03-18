@@ -71,12 +71,7 @@ export GEMINI_API_KEY="<your API key here>"
 
 
 ```lua
-use {
-  'kiddos/gemini.nvim',
-  config = function()
-    require('gemini').setup()
-  end,
-}
+use { 'kiddos/gemini.nvim', opts = {} }
 ```
 
 ## Settings
@@ -121,26 +116,31 @@ default setting
     completion_delay = 600,
     move_cursor_end = false,
     insert_result_key = '<S-Tab>',
+    can_complete = function()
+      return vim.fn.pumvisible() ~= 1
+    end,
     get_system_text = function()
-      return "You are a coding AI assistant that autocomplete user's code at a specific cursor location marked by <insert_here></insert_here>."
-        .. '\nDo not wrap the code in ```'
+      return "You are a coding AI assistant that autocomplete user's code."
+        .. "\n* Your task is to provide code suggestion at the cursor location marked by <cursor></cursor>."
+        .. '\n* Do not wrap your code response in ```'
     end,
     get_prompt = function(bufnr, pos)
       local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-      local prompt = 'Below is a %s file:\n'
+      local prompt = 'Below is the content of a %s file `%s`:\n'
           .. '```%s\n%s\n```\n\n'
-          .. 'Instruction:\nWhat code should be place at <insert_here></insert_here>?\n'
+          .. 'Suggest the most likely code at <cursor></cursor>.\n'
       local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
       local line = pos[1]
       local col = pos[2]
       local target_line = lines[line]
       if target_line then
-        lines[line] = target_line:sub(1, col) .. '<insert_here></insert_here>' .. target_line:sub(col + 1)
+        lines[line] = target_line:sub(1, col) .. '<cursor></cursor>' .. target_line:sub(col + 1)
       else
         return nil
       end
       local code = vim.fn.join(lines, '\n')
-      prompt = string.format(prompt, filetype, filetype, code)
+      local filename = vim.api.nvim_buf_get_name(bufnr)
+      prompt = string.format(prompt, filetype, filename, filetype, code)
       return prompt
     end
   },
