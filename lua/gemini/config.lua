@@ -6,7 +6,7 @@ local M = {}
 local default_model_config = {
   model_id = api.MODELS.GEMINI_2_0_FLASH,
   temperature = 0.2,
-  top_k = 20,
+  top_k = 128,
   max_output_tokens = 8196,
   response_mime_type = 'text/plain',
 }
@@ -84,7 +84,7 @@ local default_completion_config = {
   enabled = true,
   blacklist_filetypes = { 'help', 'qf', 'json', 'yaml', 'toml' },
   blacklist_filenames = { '.env' },
-  completion_delay = 600,
+  completion_delay = 1000,
   insert_result_key = '<S-Tab>',
   move_cursor_end = true,
   can_complete = function()
@@ -93,6 +93,7 @@ local default_completion_config = {
   get_system_text = function()
     return "You are a coding AI assistant that autocomplete user's code."
       .. "\n* Your task is to provide code suggestion at the cursor location marked by <cursor></cursor>."
+      .. '\n* Your response does not need to contain explaination.'
       .. '\n* Do not wrap your code response in ```'
   end,
   get_prompt = function(bufnr, pos)
@@ -110,7 +111,8 @@ local default_completion_config = {
       return nil
     end
     local code = vim.fn.join(lines, '\n')
-    local filename = vim.api.nvim_buf_get_name(bufnr)
+    local abs_path = vim.api.nvim_buf_get_name(bufnr)
+    local filename = vim.fn.fnamemodify(abs_path, ':.')
     prompt = string.format(prompt, filetype, filename, filetype, code)
     return prompt
   end
