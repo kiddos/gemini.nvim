@@ -5,9 +5,8 @@ local M = {}
 
 local default_model_config = {
   model_id = api.MODELS.GEMINI_2_0_FLASH,
-  temperature = 0.2,
+  temperature = 0.1,
   top_k = 128,
-  max_output_tokens = 8196,
   response_mime_type = 'text/plain',
 }
 
@@ -82,7 +81,7 @@ Instruction: Use 1 or 2 sentences to describe what the following {filetype} func
 
 local default_completion_config = {
   enabled = true,
-  blacklist_filetypes = { 'help', 'qf', 'json', 'yaml', 'toml' },
+  blacklist_filetypes = { 'help', 'qf', 'json', 'yaml', 'toml', 'xml' },
   blacklist_filenames = { '.env' },
   completion_delay = 1000,
   insert_result_key = '<S-Tab>',
@@ -168,9 +167,8 @@ end
 
 M.get_gemini_generation_config = function()
   return {
-    temperature = M.get_config({ 'model', 'temperature' }) or 0.9,
-    top_k = M.get_config({ 'model', 'top_k' }) or 1.0,
-    max_output_tokens = M.get_config({ 'model', 'max_output_tokens' }) or 8196,
+    temperature = M.get_config({ 'model', 'temperature' }) or default_model_config.temperature,
+    topK = M.get_config({ 'model', 'top_k' }) or default_model_config.top_k,
     response_mime_type = M.get_config({ 'model', 'response_mime_type' }) or 'text/plain',
   }
 end
