@@ -60,9 +60,7 @@ export GEMINI_API_KEY="<your API key here>"
 ```lua
 {
   'kiddos/gemini.nvim',
-  config = function()
-    require('gemini').setup()
-  end
+  opts = {}
 }
 ```
 
