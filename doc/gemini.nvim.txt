@@ -1,6 +1,6 @@
 *gemini.nvim*    Google's Gemini neovim binding
 
-INTRODUCTION                                    *gemini.nvim*
+INTRODUCTION                                    *gemini.nvim-intro*
 
 This plugin try to interface Google's Gemini API into neovim.
 
