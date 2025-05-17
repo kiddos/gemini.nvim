@@ -4,3 +4,5 @@ __pycache__
 lua/gemini/*.so
 .cache
 build
+
+doc/tags
