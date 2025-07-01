@@ -55,6 +55,12 @@ sudo apt install curl
 export GEMINI_API_KEY="<your API key here>"
 ```
 
+On macOS, the Keychain Services API, which is part of the Security framework, allows you to programmatically add API_KEY to the Keychain using cli app `security`
+
+```
+security add-generic-password -a ${USER} -s "gemini-cli" -w "YOUR_API_KEY_HERE"
+```
+
 * [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
