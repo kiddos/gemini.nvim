@@ -7,7 +7,7 @@ local function is_nvim_version_ge(major, minor, patch)
   if v.major > major then
     return true
   elseif v.major == major then
-    if v.minor > 9 then
+    if v.minor > minor then
       return true
     elseif v.minor == minor and v.patch >= patch then
       return true
@@ -22,7 +22,7 @@ M.setup = function(opts)
     return
   end
 
-  if not is_nvim_version_ge(0, 9, 1) then
+  if not is_nvim_version_ge(0, 10, 0) then
     vim.notify('neovim version too old', vim.log.levels.WARN)
     return
   end
