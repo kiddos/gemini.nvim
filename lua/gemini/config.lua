@@ -4,8 +4,8 @@ local util = require('gemini.util')
 local M = {}
 
 local default_model_config = {
-  model_id = api.MODELS.GEMINI_2_0_FLASH,
-  temperature = 0.1,
+  model_id = api.MODELS.GEMINI_2_5_FLASH_LITE,
+  temperature = 0.10,
   top_k = 128,
   response_mime_type = 'text/plain',
 }
@@ -83,7 +83,7 @@ local default_completion_config = {
   enabled = true,
   blacklist_filetypes = { 'help', 'qf', 'json', 'yaml', 'toml', 'xml' },
   blacklist_filenames = { '.env' },
-  completion_delay = 1000,
+  completion_delay = 800,
   insert_result_key = '<S-Tab>',
   move_cursor_end = true,
   can_complete = function()
@@ -93,13 +93,14 @@ local default_completion_config = {
     return "You are a coding AI assistant that autocomplete user's code."
       .. "\n* Your task is to provide code suggestion at the cursor location marked by <cursor></cursor>."
       .. '\n* Your response does not need to contain explaination.'
-      .. '\n* Do not wrap your code response in ```'
   end,
   get_prompt = function(bufnr, pos)
     local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
     local prompt = 'Below is the content of a %s file `%s`:\n'
         .. '```%s\n%s\n```\n\n'
         .. 'Suggest the most likely code at <cursor></cursor>.\n'
+        .. 'Wrap your response in ``` ```\n'
+        .. 'eg.\n```\n```\n\n'
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     local line = pos[1]
     local col = pos[2]

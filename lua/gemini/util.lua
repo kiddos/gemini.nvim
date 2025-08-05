@@ -85,9 +85,16 @@ end
 
 M.strip_code = function(text)
   local code_blocks = {}
+  if not text then
+    return code_blocks
+  end
+
   local pattern = "```(%w+)%s*(.-)%s*```"
   for _, code_block in text:gmatch(pattern) do
     table.insert(code_blocks, code_block)
+  end
+  if #code_blocks == 0 then
+    return { text }
   end
   return code_blocks
 end

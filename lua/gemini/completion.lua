@@ -72,6 +72,8 @@ M._gemini_complete = function()
       if model_response ~= nil and #model_response > 0 then
         vim.schedule(function()
           if model_response then
+            model_response = util.strip_code(model_response)
+            model_response = vim.fn.join(model_response, '\n\n')
             M.show_completion_result(model_response, win, pos)
           end
         end)
