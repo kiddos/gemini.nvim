@@ -27,11 +27,13 @@ M.start_chat = function(context)
   local generation_config = config.get_gemini_generation_config()
   local model_id = config.get_config({ 'model', 'model_id' })
 
-  api.gemini_generate_content(user_text, nil, model_id, generation_config, function(err, data)
-    if err then
-      vim.notify("Gemini API Error: " .. vim.inspect(err), vim.log.levels.ERROR)
+  api.gemini_generate_content(user_text, nil, model_id, generation_config, function(obj)
+    if obj.code ~= 0 then
+      vim.notify("Gemini API Error: " .. vim.inspect(obj), vim.log.levels.ERROR)
       return
     end
+
+    local data = obj.stdout
     if data == "" or data == nil then
       vim.notify("Gemini API returned empty response.", vim.log.levels.ERROR)
       return
