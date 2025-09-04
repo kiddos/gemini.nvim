@@ -273,7 +273,7 @@ M.gemini_generate_content_stream = function(user_text, model_name, generation_co
 					-- Find the 'data:' line within the event block and pass it to the callback.
 					local data_line = string.match(chunk, "data: (.*)")
 					if data_line then
-						callback(data_line)
+						callback(vim.trim(data_line))
 					end
 				end
 			end
