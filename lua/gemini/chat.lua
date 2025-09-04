@@ -25,26 +25,36 @@ M.start_chat = function(context)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
   local generation_config = config.get_gemini_generation_config()
-  local text = ''
   local model_id = config.get_config({ 'model', 'model_id' })
-  api.gemini_generate_content_stream(user_text, model_id, generation_config, function(json_text)
-    vim.notify("Gemini trying to decode: " .. vim.inspect(json_text))
-    local model_response = vim.json.decode(json_text)
-    if not model_response then
-      vim.notify("Gemini JSON decoding failed for the text above.", vim.log.levels.ERROR)
+
+  api.gemini_generate_content(user_text, nil, model_id, generation_config, function(err, data)
+    if err then
+      vim.notify("Gemini API Error: " .. vim.inspect(err), vim.log.levels.ERROR)
       return
     end
-    model_response = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
-    if not model_response then
+    if data == "" or data == nil then
+      vim.notify("Gemini API returned empty response.", vim.log.levels.ERROR)
       return
     end
 
-    text = text .. model_response
+    local response_data = vim.json.decode(data)
+    if not response_data then
+      vim.notify("Failed to decode Gemini API response: " .. data, vim.log.levels.ERROR)
+      return
+    end
+
+    local model_response = util.table_get(response_data, { 'candidates', 1, 'content', 'parts', 1, 'text' })
+    if not model_response then
+      vim.notify("Unexpected API response structure: " .. data, vim.log.levels.ERROR)
+      return
+    end
+
     vim.schedule(function()
-      lines = vim.split(text, '\n')
+      lines = vim.split(model_response, '\n')
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
     end)
   end)
 end
+
 
 return M
