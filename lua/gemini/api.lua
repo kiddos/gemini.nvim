@@ -21,67 +21,105 @@ M.MODELS = {
 	GEMINI_1_5_FLASH_8B = "gemini-1.5-flash-8b",
 }
 
---- Retrieves the Gemini API key from the macOS keychain asynchronously.
--- This function executes the `security` command to fetch the password
--- stored for the "gemini-cli" generic password item.
+local function get_api_key_from_file(callback)
+	local path = vim.fn.expand("~/.gemini/api.key")
+	vim.uv.fs_open(path, "r", 438, function(err, fd)
+		if err then
+			callback(nil) -- File doesn't exist or can't be opened, fallback.
+			return
+		end
+		vim.uv.fs_fstat(fd, function(err, stat)
+			if err then
+				vim.uv.fs_close(fd, function() end)
+				callback(nil)
+				return
+			end
+			vim.uv.fs_read(fd, stat.size, 0, function(err, data)
+				vim.uv.fs_close(fd, function() end)
+				if err then
+					callback(nil)
+					return
+				end
+				local key = vim.trim(data)
+				if key == "" then
+					vim.notify("API key file is empty.", vim.log.levels.WARN)
+					callback(nil)
+				else
+					callback(key)
+				end
+			end)
+		end)
+	end)
+end
+
+--- Retrieves the Gemini API key.
+-- It first tries to read from ~/.gemini/api.key.
+-- If that fails, it falls back to the macOS keychain.
 -- @param callback (function) A callback function that receives the API key.
 local function get_api_key_async(callback)
-	-- The `security` command is specific to macOS.
-	if vim.fn.has("mac") == 0 then
-		vim.notify("Keychain access is only supported on macOS.", vim.log.levels.ERROR)
-		callback(nil)
-		return
-	end
+	get_api_key_from_file(function(key)
+		if key then
+			callback(key)
+			return
+		end
 
-	local cmd = "security"
-	local args = { "find-generic-password", "-l", "gemini-cli", "-w" }
-	local stdout = vim.loop.new_pipe(false)
-	local stderr = vim.loop.new_pipe(false)
-	local key_buffer = ""
-	local err_buffer = ""
-
-	local handle
-handle = vim.loop.spawn(cmd, {
-		args = args,
-		stdio = { nil, stdout, stderr },
-	}, function(code, _)
-		stdout:close()
-		stderr:close()
-		handle:close()
-
-		if code ~= 0 then
-			vim.notify(
-				"Error getting Gemini API key from keychain. Is it stored under 'gemini-cli'?",
-				vim.log.levels.ERROR
-			)
-			if err_buffer ~= "" then
-				vim.notify("Keychain Error: " .. err_buffer, vim.log.levels.INFO)
-			end
+		-- Fallback to keychain if file method fails.
+		if vim.fn.has("mac") == 0 then
+			vim.notify("API key file not found and keychain access is only supported on macOS.", vim.log.levels.ERROR)
 			callback(nil)
-		else
-			local key = vim.trim(key_buffer)
-			if key == "" then
-				vim.notify("Gemini API key from keychain is empty.", vim.log.levels.WARN)
+			return
+		end
+
+		local cmd = "security"
+		local args = { "find-generic-password", "-l", "gemini-cli", "-w" }
+		local stdout = vim.loop.new_pipe(false)
+		local stderr = vim.loop.new_pipe(false)
+		local key_buffer = ""
+		local err_buffer = ""
+
+		local handle
+		handle = vim.loop.spawn(cmd, {
+			args = args,
+			stdio = { nil, stdout, stderr },
+		}, function(code, _)
+			stdout:close()
+			stderr:close()
+			handle:close()
+
+			if code ~= 0 then
+				vim.notify(
+					"Error getting Gemini API key from keychain. Is it stored under 'gemini-cli'?",
+					vim.log.levels.ERROR
+				)
+				if err_buffer ~= "" then
+					vim.notify("Keychain Error: " .. err_buffer, vim.log.levels.INFO)
+				end
 				callback(nil)
 			else
-				callback(key)
+				local key = vim.trim(key_buffer)
+				if key == "" then
+					vim.notify("Gemini API key from keychain is empty.", vim.log.levels.WARN)
+					callback(nil)
+				else
+					callback(key)
+				end
 			end
-		end
+		end)
+
+		vim.loop.read_start(stdout, function(err, data)
+			assert(not err, err)
+			if data then
+				key_buffer = key_buffer .. data
+			end
+		end)
+
+		vim.loop.read_start(stderr, function(err, data)
+			assert(not err, err)
+			if data then
+				err_buffer = err_buffer .. data
+			end
+		end)
 	end)
-
-vim.loop.read_start(stdout, function(err, data)
-		assert(not err, err)
-		if data then
-			key_buffer = key_buffer .. data
-		end
-end)
-
-vim.loop.read_start(stderr, function(err, data)
-		assert(not err, err)
-		if data then
-			err_buffer = err_buffer .. data
-		end
-end)
 end
 
 ---
