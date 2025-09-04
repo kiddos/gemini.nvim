@@ -45,6 +45,7 @@ local function get_api_key_from_file(callback)
 					vim.notify("API key file is empty.", vim.log.levels.WARN)
 					callback(nil)
 				else
+					vim.notify("Gemini: Successfully loaded API key from ~/.gemini/api.key")
 					callback(key)
 				end
 			end)
@@ -88,7 +89,7 @@ local function get_api_key_async(callback)
 
 			if code ~= 0 then
 				vim.notify(
-					"Error getting Gemini API key from keychain. Is it stored under 'gemini-cli'?",
+					"Gemini: Could not find API key in file or keychain.",
 					vim.log.levels.ERROR
 				)
 				if err_buffer ~= "" then
@@ -101,6 +102,7 @@ local function get_api_key_async(callback)
 					vim.notify("Gemini API key from keychain is empty.", vim.log.levels.WARN)
 					callback(nil)
 				else
+					vim.notify("Gemini: Successfully loaded API key from macOS keychain.")
 					callback(key)
 				end
 			end
