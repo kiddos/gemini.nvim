@@ -28,7 +28,12 @@ M.start_chat = function(context)
   local text = ''
   local model_id = config.get_config({ 'model', 'model_id' })
   api.gemini_generate_content_stream(user_text, model_id, generation_config, function(json_text)
+    vim.notify("Gemini trying to decode: " .. vim.inspect(json_text))
     local model_response = vim.json.decode(json_text)
+    if not model_response then
+      vim.notify("Gemini JSON decoding failed for the text above.", vim.log.levels.ERROR)
+      return
+    end
     model_response = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
     if not model_response then
       return
