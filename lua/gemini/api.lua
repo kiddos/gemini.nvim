@@ -140,7 +140,10 @@ M.gemini_generate_content = function(user_text, system_text, model_name, generat
 			return
 		end
 
-		local api = API .. model_name .. ":generateContent?key=" .. api_key
+		-- If the user provides a key from the MODELS table (e.g., "GEMINI_2_5_FLASH"),
+		-- look up its value (e.g., "gemini-2.5-flash").
+		local final_model_name = M.MODELS[model_name] or model_name
+		local api = API .. final_model_name .. ":generateContent?key=" .. api_key
 		local contents = {
 			{
 				role = "user",
@@ -196,7 +199,10 @@ M.gemini_generate_content_stream = function(user_text, model_name, generation_co
 			return
 		end
 
-		local api = API .. model_name .. ":streamGenerateContent?alt=sse&key=" .. api_key
+		-- If the user provides a key from the MODELS table (e.g., "GEMINI_2_5_FLASH"),
+		-- look up its value (e.g., "gemini-2.5-flash").
+		local final_model_name = M.MODELS[model_name] or model_name
+		local api = API .. final_model_name .. ":streamGenerateContent?alt=sse&key=" .. api_key
 		local data = {
 			contents = {
 				{
