@@ -215,6 +215,7 @@ M.gemini_generate_content_stream = function(user_text, model_name, generation_co
 		local stdout = uv.new_pipe(false)
 		local stderr = uv.new_pipe(false)
 		local handle
+		local stderr_buffer = ""
 
 		-- Arguments for the curl command. Using -N disables output buffering, which is ideal for streams.
 		-- The API URL is placed at the end, which is the standard position for curl.
@@ -229,7 +230,15 @@ M.gemini_generate_content_stream = function(user_text, model_name, generation_co
 			stdout:close()
 			stderr:close()
 			if code ~= 0 then
-				vim.notify("Gemini stream finished with non-zero exit code: " .. tostring(code), vim.log.levels.WARN)
+				vim.schedule(function()
+					vim.notify(
+						"Gemini stream finished with non-zero exit code: " .. tostring(code),
+						vim.log.levels.ERROR
+					)
+					if stderr_buffer ~= "" then
+						vim.notify("Gemini API Error: " .. stderr_buffer, vim.log.levels.ERROR)
+					end
+				end)
 			end
 		end)
 
@@ -273,11 +282,12 @@ M.gemini_generate_content_stream = function(user_text, model_name, generation_co
 		-- Optionally, read from stderr for debugging.
 		uv.read_start(stderr, function(err, data)
 			if not err and data then
-				vim.notify("Gemini stream stderr: " .. data, vim.log.levels.INFO)
+				stderr_buffer = stderr_buffer .. data
 			end
 		end)
 	end)
 end
+
 
 
 return M
