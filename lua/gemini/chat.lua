@@ -16,11 +16,38 @@ M.setup = function()
   })
 end
 
-M.start_chat = function(context)
-  vim.api.nvim_command('tabnew')
-  local user_text = context.args
-  local bufnr = vim.api.nvim_get_current_buf()
+local chat_winnr = nil
+local chat_number = 0
+
+local function get_bufnr(user_text)
+  local conf = config.get_config({ 'chat' })
+  local bufnr = nil
+  if not chat_winnr or not vim.api.nvim_win_is_valid(chat_winnr) or conf.window.position == 'new_tab' then
+    if conf.window.position == 'tab' or conf.window.position == 'new_tab' then
+      vim.api.nvim_command('tabnew')
+    elseif conf.window.position == 'left' then
+      vim.api.nvim_command('vertical topleft split new')
+      vim.api.nvim_win_set_width(0, conf.window.width or 80)
+    elseif conf.window.position == 'right' then
+      vim.api.nvim_command('rightbelow vnew')
+      vim.api.nvim_win_set_width(0, conf.window.width or 80)
+    end
+    chat_winnr = vim.api.nvim_tabpage_get_win(0)
+    bufnr = vim.api.nvim_win_get_buf(0)
+  end
+  vim.api.nvim_set_current_win(chat_winnr)
+  bufnr = bufnr or vim.api.nvim_win_get_buf(0)
+  vim.api.nvim_set_option_value('buftype', 'nofile', { buf = bufnr })
   vim.api.nvim_set_option_value('ft', 'markdown', { buf = bufnr })
+  vim.api.nvim_buf_set_name(bufnr, 'Chat' .. chat_number .. ': ' .. user_text)
+
+  return vim.api.nvim_win_get_buf(0)
+end
+
+M.start_chat = function(context)
+  local user_text = context.args
+  chat_number = chat_number + 1
+  local bufnr = get_bufnr(user_text)
   local lines = { 'Generating response...' }
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
