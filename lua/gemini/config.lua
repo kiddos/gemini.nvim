@@ -12,6 +12,10 @@ local default_model_config = {
 
 local default_chat_config = {
   enabled = true,
+  window = {
+    position = "new_tab",     -- left, right, new_tab, tab
+    width = 80,               -- number of columns of the left/right window
+  }
 }
 
 local default_instruction_config = {
