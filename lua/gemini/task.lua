@@ -110,19 +110,30 @@ local function close_split_by_filename(tmpfile)
 end
 
 M.apply_patch = function()
-  if context.bufnr and context.model_response then
-    print('-- apply changes from Gemini')
-    local lines = vim.split(context.model_response, '\n')
-    vim.api.nvim_buf_set_lines(context.bufnr, 0, -1, false, lines)
-
-    if context.tmpfile then
-      close_split_by_filename(context.tmpfile)
-    end
-
-    context.bufnr = nil
-    context.model_response = nil
-    context.tmpfile = nil
+  if not context.bufnr or not context.tmpfile then
+    vim.notify('No Gemini task to apply.', vim.log.levels.WARN)
+    return
   end
+
+  print('-- apply changes from Gemini')
+
+  local tmp_bufnr = vim.fn.bufnr(vim.fn.fnamemodify(context.tmpfile, ':p'))
+  if tmp_bufnr == -1 then
+    vim.notify('Could not find the temporary buffer for edited changes.', vim.log.levels.ERROR)
+    return
+  end
+
+  local edited_lines = vim.api.nvim_buf_get_lines(tmp_bufnr, 0, -1, false)
+
+  vim.api.nvim_buf_set_lines(context.bufnr, 0, -1, false, edited_lines)
+
+  if context.tmpfile then
+    close_split_by_filename(context.tmpfile)
+  end
+
+  context.bufnr = nil
+  context.model_response = nil
+  context.tmpfile = nil
 end
 
 return M

@@ -79,11 +79,9 @@ default setting
 ```lua
 {
   model_config = {
-    completion_delay = 1000,
-    model_id = api.MODELS.GEMINI_2_0_FLASH,
-    temperature = 0.2,
-    top_k = 20,
-    max_output_tokens = 8196,
+    model_id = 'gemini-2.5-flash',
+    temperature = 0.10,
+    top_k = 128,
     response_mime_type = 'text/plain',
   },
   chat_config = {
@@ -96,37 +94,39 @@ default setting
     get_prompt = function(node, bufnr)
       local code_block = vim.treesitter.get_node_text(node, bufnr)
       local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-      local prompt = "
-  Instruction: Use 1 or 2 sentences to describe what the following {filetype} function does:
-  
+      local prompt = [[
+  In struction: Use 1 or 2 sentences to describe what the following {filetype} function does:
+
   ```{filetype}
   {code_block}
-  ```",
+  ``]] .. '`'
       prompt = prompt:gsub('{filetype}', filetype)
       prompt = prompt:gsub('{code_block}', code_block)
       return prompt
     end
-  }
+  },
   completion = {
     enabled = true,
-    blacklist_filetypes = { 'help', 'qf', 'json', 'yaml', 'toml' },
+    blacklist_filetypes = { 'help', 'qf', 'json', 'yaml', 'toml', 'xml' },
     blacklist_filenames = { '.env' },
-    completion_delay = 600,
-    move_cursor_end = false,
+    completion_delay = 800,
     insert_result_key = '<S-Tab>',
+    move_cursor_end = true,
     can_complete = function()
       return vim.fn.pumvisible() ~= 1
     end,
     get_system_text = function()
       return "You are a coding AI assistant that autocomplete user's code."
         .. "\n* Your task is to provide code suggestion at the cursor location marked by <cursor></cursor>."
-        .. '\n* Do not wrap your code response in ```'
+        .. '\n* Your response does not need to contain explaination.'
     end,
     get_prompt = function(bufnr, pos)
       local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
       local prompt = 'Below is the content of a %s file `%s`:\n'
           .. '```%s\n%s\n```\n\n'
           .. 'Suggest the most likely code at <cursor></cursor>.\n'
+          .. 'Wrap your response in ``` ```\n'
+          .. 'eg.\n```\n```\n\n'
       local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
       local line = pos[1]
       local col = pos[2]
@@ -137,14 +137,15 @@ default setting
         return nil
       end
       local code = vim.fn.join(lines, '\n')
-      local filename = vim.api.nvim_buf_get_name(bufnr)
+      local abs_path = vim.api.nvim_buf_get_name(bufnr)
+      local filename = vim.fn.fnamemodify(abs_path, ':.')
       prompt = string.format(prompt, filetype, filename, filetype, code)
       return prompt
     end
   },
   instruction = {
     enabled = true,
-    menu_key = '<C-o>',
+    menu_key = '<Leader><Leader><Leader>g',
     prompts = {
       {
         name = 'Unit Test',
@@ -184,13 +185,13 @@ default setting
           return string.format(prompt, filetype, code)
         end,
       },
-    },
+    }
   },
   task = {
     enabled = true,
     get_system_text = function()
-      return 'You are an AI assistant that helps user write code.\n'
-        .. 'Your output should be a code diff for git.'
+      return 'You are an AI assistant that helps user write code.'
+        .. '\n* You should output the new content for the Current Opened File'
     end,
     get_prompt = function(bufnr, user_prompt)
       local buffers = vim.api.nvim_list_bufs()
@@ -199,8 +200,8 @@ default setting
       for _, b in ipairs(buffers) do
         if vim.api.nvim_buf_is_loaded(b) then -- Only get content from loaded buffers
           local lines = vim.api.nvim_buf_get_lines(b, 0, -1, false)
-          local filename = vim.api.nvim_buf_get_name(b)
-          filename = vim.fn.fnamemodify(filename, ":.")
+          local abs_path = vim.api.nvim_buf_get_name(b)
+          local filename = vim.fn.fnamemodify(abs_path, ':.')
           local filetype = vim.api.nvim_get_option_value('filetype', { buf = b })
           local file_content = table.concat(lines, "\n")
           file_content = string.format("`%s`:\n\n```%s\n%s\n```\n\n", filename, filetype, file_content)
@@ -215,6 +216,6 @@ default setting
       return string.format('%s\n\nCurrent Opened File: %s\n\nTask: %s',
         context, current_filepath, user_prompt)
     end
-  },
+    },
 }
 ```
