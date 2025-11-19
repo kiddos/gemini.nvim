@@ -5,7 +5,7 @@ local api = require('gemini.api')
 local M = {}
 
 local context = {
-  namespace_id = nil,
+  namespace_id = vim.api.nvim_create_namespace('gemini_completion'),
   completion = nil,
 }
 
@@ -15,24 +15,23 @@ M.setup = function()
     return
   end
 
-  local blacklist_filetypes = config.get_config({ 'completion', 'blacklist_filetypes' }) or {}
-  local blacklist_filenames = config.get_config({ 'completion', 'blacklist_filenames' }) or {}
-
-  context.namespace_id = vim.api.nvim_create_namespace('gemini_completion')
-
   vim.api.nvim_create_autocmd('CursorMovedI', {
     callback = function()
-      local buf = vim.api.nvim_get_current_buf()
-      local filetype = vim.api.nvim_get_option_value('filetype', { buf = buf })
-      local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t")
-      if util.is_blacklisted(blacklist_filetypes, filetype) or util.is_blacklisted(blacklist_filenames, filename) then
-        return
-      end
       M.gemini_complete()
     end,
   })
 
-  vim.api.nvim_set_keymap('i', config.get_config({ 'completion', 'insert_result_key' }) or '<S-Tab>', '', {
+  local trigger_completion_key = config.get_config({ 'completion', 'trigger_key' })
+  if trigger_completion_key then
+    vim.api.nvim_set_keymap('i', trigger_completion_key, '', {
+      callback = function()
+        M.gemini_complete()
+      end,
+    })
+  end
+
+  local insert_key = config.get_config({ 'completion', 'insert_result_key' }) or '<S-Tab>'
+  vim.api.nvim_set_keymap('i', insert_key, '', {
     callback = function()
       M.insert_completion_result()
     end,
@@ -75,6 +74,7 @@ M._gemini_complete = function()
           if model_response then
             model_response = util.strip_code(model_response)
             model_response = vim.fn.join(model_response, '\n\n')
+            model_response = string.gsub(model_response, '<%|file_separator%|>', "")
             M.show_completion_result(model_response, win, pos)
           end
         end)
@@ -84,6 +84,16 @@ M._gemini_complete = function()
 end
 
 M.gemini_complete = util.debounce(function()
+  local blacklist_filetypes = config.get_config({ 'completion', 'blacklist_filetypes' }) or {}
+  local blacklist_filenames = config.get_config({ 'completion', 'blacklist_filenames' }) or {}
+
+  local buf = vim.api.nvim_get_current_buf()
+  local filetype = vim.api.nvim_get_option_value('filetype', { buf = buf })
+  local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t")
+  if util.is_blacklisted(blacklist_filetypes, filetype) or util.is_blacklisted(blacklist_filenames, filename) then
+    return
+  end
+
   if vim.fn.mode() ~= 'i' then
     return
   end

@@ -69,7 +69,7 @@ local default_instruction_config = {
 
 local default_completion_config = {
   model = {
-    model_id = api.MODELS.GEMINI_2_5_FLASH_LITE,
+    model_id = api.MODELS.GEMINI_2_5_FLASH,
     temperature = default_temperature,
     top_k = default_top_k,
   },
@@ -85,15 +85,18 @@ local default_completion_config = {
     return "You are an **Expert Code Completion Assistant**, a highly skilled, concise, and language-agnostic programmer.\n"
       .. "Your primary function is to generate code based on the user's current context (prefix, suffix, and surrounding files).\n"
       .. "The following special tokens are used to manage infilling:\n"
-      .. "* **Prefix:** `<|fim_prefix|>` (Code before the cursor)\n"
-      .. "* **Suffix:** `<|fim_suffix|>` (Code after the cursor)\n"
-      .. "* **Infill Start:** `<|fim_middle|>` (Start generating the middle part)"
+      .. "The <|file_separator|> token tells the model where one auxiliary file ends and the next begins.\n"
+      .. "The <|fim_prefix|> token marks the end of the prefix code in the target file.\n"
+      .. "The <|fim_suffix|> token marks the beginning of the suffix code in the target file.\n"
+      .. "The <|fim_middle|> token signals the model to start generating the infill.\n"
   end,
   get_prompt = function(bufnr, pos)
+    local name = vim.api.nvim_buf_get_name(bufnr)
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     local row = pos[1]
     local col = pos[2]
-    local prompt = '<|fim_prefix|>'
+    local prompt = '<|file_separator|>' .. name .. '\n'
+    prompt = prompt .. '<|fim_prefix|>'
     for i, line in ipairs(lines) do
       if i == row then
         local prefix = line:sub(1, col)
