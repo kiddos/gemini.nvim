@@ -3,15 +3,15 @@ local util = require('gemini.util')
 
 local M = {}
 
-local default_model_config = {
-  model_id = api.MODELS.GEMINI_2_5_FLASH_LITE,
-  temperature = 0.10,
-  top_k = 128,
-  response_mime_type = 'text/plain',
-}
+local default_temperature = 0.06
+local default_top_k = 64
 
 local default_chat_config = {
-  enabled = true,
+  model = {
+    model_id = api.MODELS.GEMINI_2_5_PRO,
+    temperature = default_temperature,
+    top_k = default_top_k,
+  },
   window = {
     position = "new_tab",     -- left, right, new_tab, tab
     width = 80,               -- number of columns of the left/right window
@@ -19,7 +19,11 @@ local default_chat_config = {
 }
 
 local default_instruction_config = {
-  enabled = true,
+  model = {
+    model_id = api.MODELS.GEMINI_2_5_FLASH,
+    temperature = default_temperature,
+    top_k = default_top_k,
+  },
   menu_key = '<Leader><Leader><Leader>g',
   prompts = {
     {
@@ -63,29 +67,13 @@ local default_instruction_config = {
   }
 }
 
-local default_hints_config = {
-  enabled = true,
-  hints_delay = 2000,
-  insert_result_key = '<S-Tab>',
-  get_prompt = function(node, bufnr)
-    local code_block = vim.treesitter.get_node_text(node, bufnr)
-    local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-    local prompt = [[
-Instruction: Use 1 or 2 sentences to describe what the following {filetype} function does:
-
-```{filetype}
-{code_block}
-```
-]]
-    prompt = prompt:gsub('{filetype}', filetype)
-    prompt = prompt:gsub('{code_block}', code_block)
-    return prompt
-  end
-}
-
 local default_completion_config = {
-  enabled = true,
-  blacklist_filetypes = { 'help', 'qf', 'json', 'yaml', 'toml', 'xml' },
+  model = {
+    model_id = api.MODELS.GEMINI_2_5_FLASH_LITE,
+    temperature = default_temperature,
+    top_k = default_top_k,
+  },
+  blacklist_filetypes = { 'help', 'qf', 'json', 'yaml', 'toml', 'xml', 'ini' },
   blacklist_filenames = { '.env' },
   completion_delay = 800,
   insert_result_key = '<S-Tab>',
@@ -94,9 +82,12 @@ local default_completion_config = {
     return vim.fn.pumvisible() ~= 1
   end,
   get_system_text = function()
-    return "You are a coding AI assistant that autocomplete user's code."
-      .. "\n* Your task is to provide code suggestion at the cursor location marked by <cursor></cursor>."
-      .. '\n* Your response does not need to contain explaination.'
+    return "You are an **Expert Code Completion Assistant**, a highly skilled, concise, and language-agnostic programmer.\n"
+      .. "Your primary function is to generate code based on the user's current context (prefix, suffix, and surrounding files).\n"
+      .. "The following special tokens are used to manage infilling:\n"
+      .. "* **Prefix:** `<|fim_prefix|>` (Code before the cursor)\n"
+      .. "* **Suffix:** `<|fim_suffix|>` (Code after the cursor)\n"
+      .. "* **Infill Start:** `<|fim_middle|>` (Start generating the middle part)"
   end,
   get_prompt = function(bufnr, pos)
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
@@ -118,7 +109,11 @@ local default_completion_config = {
 }
 
 local default_task_config = {
-  enabled = true,
+  model = {
+    model_id = api.MODELS.GEMINI_2_5_FLASH,
+    temperature = default_temperature,
+    top_k = default_top_k,
+  },
   get_system_text = function()
     return 'You are an AI assistant that helps user write code.'
       .. '\n* You should output the new content for the Current Opened File'
@@ -152,9 +147,7 @@ M.set_config = function(opts)
   opts = opts or {}
 
   M.config = {
-    model = vim.tbl_deep_extend('force', {}, default_model_config, opts.model_config or {}),
     chat = vim.tbl_deep_extend('force', {}, default_chat_config, opts.chat_config or {}),
-    hints = vim.tbl_deep_extend('force', {}, default_hints_config, opts.hints or {}),
     completion = vim.tbl_deep_extend('force', {}, default_completion_config, opts.completion or {}),
     instruction = vim.tbl_deep_extend('force', {}, default_instruction_config, opts.instruction or {}),
     task = vim.tbl_deep_extend('force', {}, default_task_config, opts.task or {})
@@ -165,11 +158,11 @@ M.get_config = function(keys)
   return util.table_get(M.config, keys)
 end
 
-M.get_gemini_generation_config = function()
+M.get_gemini_generation_config = function(space)
   return {
-    temperature = M.get_config({ 'model', 'temperature' }) or default_model_config.temperature,
-    topK = M.get_config({ 'model', 'top_k' }) or default_model_config.top_k,
-    response_mime_type = M.get_config({ 'model', 'response_mime_type' }) or 'text/plain',
+    temperature = M.get_config({ space, 'model', 'temperature' }) or default_temperature,
+    topK = M.get_config({ space, 'model', 'top_k' }) or default_top_k,
+    response_mime_type = 'text/plain',
   }
 end
 

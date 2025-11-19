@@ -10,7 +10,8 @@ local context = {
 }
 
 M.setup = function()
-  if not config.get_config({ 'completion', 'enabled' }) then
+  local model = config.get_config({ 'completion', 'model' })
+  if not model or not model.model_id then
     return
   end
 
@@ -62,8 +63,8 @@ M._gemini_complete = function()
     system_text = get_system_text()
   end
 
-  local generation_config = config.get_gemini_generation_config()
-  local model_id = config.get_config({ 'model', 'model_id' })
+  local generation_config = config.get_gemini_generation_config('completion')
+  local model_id = config.get_config({ 'completion', 'model', 'model_id' })
   api.gemini_generate_content(user_text, system_text, model_id, generation_config, function(result)
     local json_text = result.stdout
     if json_text and #json_text > 0 then

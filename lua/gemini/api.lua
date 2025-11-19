@@ -5,6 +5,7 @@ local M = {}
 local API = "https://generativelanguage.googleapis.com/v1beta/models/";
 
 M.MODELS = {
+  GEMINI_FLASH_LATEST = 'gemini-flash-latest',
   GEMINI_2_5_PRO = 'gemini-2.5-pro',
   GEMINI_2_5_FLASH = 'gemini-2.5-flash',
   GEMINI_2_5_FLASH_LITE = 'gemini-2.5-flash-lite',
@@ -35,7 +36,6 @@ M.gemini_generate_content = function(user_text, system_text, model_name, generat
   }
   if system_text then
     data.systemInstruction = {
-      role = 'user',
       parts = {
         {
           text = system_text,

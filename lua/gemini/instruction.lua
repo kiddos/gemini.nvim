@@ -5,7 +5,8 @@ local api = require('gemini.api')
 local M = {}
 
 M.setup = function()
-  if not config.get_config({ 'instruction', 'enabled' }) then
+  local model = config.get_config({ 'instruction', 'model' })
+  if not model or not model.model_id then
     return
   end
 
@@ -30,12 +31,12 @@ M.setup = function()
       end
       local user_text = get_prompt(lines, bufnr)
 
-      local generation_config = config.get_gemini_generation_config()
+      local generation_config = config.get_gemini_generation_config('instruction')
 
       vim.api.nvim_command('tabnew')
       local new_buf = vim.api.nvim_get_current_buf()
       vim.api.nvim_set_option_value('filetype', 'markdown', { buf = new_buf })
-      local model_id = config.get_config({ 'model', 'model_id' })
+      local model_id = config.get_config({ 'instruction', 'model', 'model_id' })
       local text = ''
       api.gemini_generate_content_stream(user_text, model_id, generation_config, function(json_text)
         local model_response = vim.json.decode(json_text)

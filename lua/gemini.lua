@@ -31,7 +31,6 @@ M.setup = function(opts)
 
   require('gemini.chat').setup()
   require('gemini.instruction').setup()
-  require('gemini.hint').setup()
   require('gemini.completion').setup()
   require('gemini.task').setup()
 end

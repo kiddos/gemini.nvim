@@ -11,7 +11,8 @@ local context = {
 }
 
 M.setup = function()
-  if not config.get_config({ 'task', 'enabled' }) then
+  local model = config.get_config({ 'task', 'model' })
+  if not model or not model.model_id then
     return
   end
 
@@ -68,8 +69,8 @@ M.run_task = function(ctx)
   end
 
   print('-- running Gemini Task...')
-  local generation_config = config.get_gemini_generation_config()
-  local model_id = config.get_config({ 'model', 'model_id' })
+  local generation_config = config.get_gemini_generation_config('task')
+  local model_id = config.get_config({ 'task', 'model', 'model_id' })
   api.gemini_generate_content(prompt, system_text, model_id, generation_config, function(result)
     local json_text = result.stdout
     if json_text and #json_text > 0 then
