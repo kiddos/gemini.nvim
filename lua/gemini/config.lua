@@ -99,25 +99,20 @@ local default_completion_config = {
       .. '\n* Your response does not need to contain explaination.'
   end,
   get_prompt = function(bufnr, pos)
-    local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-    local prompt = 'Below is the content of a %s file `%s`:\n'
-        .. '```%s\n%s\n```\n\n'
-        .. 'Suggest the most likely code at <cursor></cursor>.\n'
-        .. 'Wrap your response in ``` ```\n'
-        .. 'eg.\n```\n```\n\n'
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    local line = pos[1]
+    local row = pos[1]
     local col = pos[2]
-    local target_line = lines[line]
-    if target_line then
-      lines[line] = target_line:sub(1, col) .. '<cursor></cursor>' .. target_line:sub(col + 1)
-    else
-      return nil
+    local prompt = '<|fim_prefix|>'
+    for i, line in ipairs(lines) do
+      if i == row then
+        local prefix = line:sub(1, col)
+        local suffix = line:sub(col + 1)
+        prompt = prompt .. prefix .. ' <|fim_suffix|>\n' .. suffix .. '\n'
+      else
+        prompt = prompt .. line .. '\n'
+      end
     end
-    local code = vim.fn.join(lines, '\n')
-    local abs_path = vim.api.nvim_buf_get_name(bufnr)
-    local filename = vim.fn.fnamemodify(abs_path, ':.')
-    prompt = string.format(prompt, filetype, filename, filetype, code)
+    prompt = prompt .. '<|fim_middle|>'
     return prompt
   end
 }
