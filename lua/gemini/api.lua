@@ -22,7 +22,6 @@ M.gemini_generate_content = function(user_text, system_text, model_name, generat
   local api = API .. model_name .. ':generateContent?key=' .. api_key
   local contents = {
     {
-      role = 'user',
       parts = {
         {
           text = user_text
@@ -68,7 +67,6 @@ M.gemini_generate_content_stream = function(user_text, model_name, generation_co
   local data = {
     contents = {
       {
-        role = 'user',
         parts = {
           {
             text = user_text
