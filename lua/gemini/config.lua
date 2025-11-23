@@ -82,31 +82,29 @@ local default_completion_config = {
     return vim.fn.pumvisible() ~= 1
   end,
   get_system_text = function()
-    return "You are an **Expert Code Completion Assistant**, a highly skilled, concise, and language-agnostic programmer.\n"
-      .. "Your primary function is to generate code based on the user's current context (prefix, suffix, and surrounding files).\n"
-      .. "The following special tokens are used to manage infilling:\n"
-      .. "The <|file_separator|> token tells the model where one auxiliary file ends and the next begins.\n"
-      .. "The <|fim_prefix|> token marks the end of the prefix code in the target file.\n"
-      .. "The <|fim_suffix|> token marks the beginning of the suffix code in the target file.\n"
-      .. "The <|fim_middle|> token signals the model to start generating the infill.\n"
+    return "I need you to act as a pure code-completion tool."
   end,
   get_prompt = function(bufnr, pos)
-    local name = vim.api.nvim_buf_get_name(bufnr)
+    local abs_path = vim.api.nvim_buf_get_name(bufnr)
+    local filename = vim.fn.fnamemodify(abs_path, ':.')
+    local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     local row = pos[1]
     local col = pos[2]
-    local prompt = '<|file_separator|>' .. name .. '\n'
-    prompt = prompt .. '<|fim_prefix|>'
+    local prompt = 'I have a %s file %s with a missing code block. Please generate EXACTLY the code that fills the gap.\n\n'
+    prompt = string.format(prompt, filetype, filename)
+    prompt = prompt .. '[CODE BEFORE GAP]\n'
     for i, line in ipairs(lines) do
       if i == row then
-        local prefix = line:sub(1, col)
-        local suffix = line:sub(col + 1)
-        prompt = prompt .. prefix .. ' <|fim_suffix|>\n' .. suffix .. '\n'
+        local line_prefix = line:sub(1, col)
+        local line_suffix = line:sub(col + 1)
+        prompt = prompt .. line_prefix .. '\n\n[CODE AFTER GAP]\n' .. line_suffix .. '\n'
       else
         prompt = prompt .. line .. '\n'
       end
     end
-    prompt = prompt .. '<|fim_middle|>'
+    prompt = prompt .. '[INSTRUCTION]\n'
+    prompt = prompt .. 'Generate the code that goes between the two blocks above. Return only the code. If the logic is complete, stop immediately.\n'
     return prompt
   end
 }
@@ -166,6 +164,9 @@ M.get_gemini_generation_config = function(space)
     temperature = M.get_config({ space, 'model', 'temperature' }) or default_temperature,
     topK = M.get_config({ space, 'model', 'top_k' }) or default_top_k,
     response_mime_type = 'text/plain',
+    thinkingConfig = {
+      thinkingBudget = 0
+    }
   }
 end
 

@@ -74,10 +74,6 @@ M._gemini_complete = function()
           if model_response then
             model_response = util.strip_code(model_response)
             model_response = vim.fn.join(model_response, '\n\n')
-            model_response = string.gsub(model_response, '<%|file_separator%|>', "")
-            model_response = string.gsub(model_response, '<%|fim_prefix%|>', "")
-            model_response = string.gsub(model_response, '<%|fim_suffix%|>', "")
-            model_response = string.gsub(model_response, '<%|fim_middle%|>', "")
             M.show_completion_result(model_response, win, pos)
           end
         end)
