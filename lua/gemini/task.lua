@@ -37,6 +37,25 @@ local get_prompt_text = function(bufnr, user_prompt)
   return get_prompt(bufnr, user_prompt)
 end
 
+local function open_file_in_split(filepath, ft)
+  local bufnr = vim.fn.bufnr(filepath, true)
+  if bufnr == 0 then
+    print("Error: Could not find or create buffer for file: " .. filepath)
+    return
+  end
+  vim.api.nvim_set_option_value('filetype', ft, {buf = bufnr})
+
+  local win_id = vim.api.nvim_open_win(bufnr, false, {
+    split = 'right',
+    win = 0,
+  })
+  vim.api.nvim_set_current_win(win_id)
+
+  vim.api.nvim_set_option_value('diff', true, { win = win_id })
+  vim.api.nvim_set_option_value('scrollbind', true, { win = win_id })
+  vim.api.nvim_set_option_value('cursorbind', true, { win = win_id })
+end
+
 local function diff_with_current_file(bufnr, new_content)
   local tmpfile = vim.fn.tempname()
 
@@ -47,13 +66,9 @@ local function diff_with_current_file(bufnr, new_content)
     f:close()
   end
 
-  vim.api.nvim_set_current_buf(bufnr)
 
-  vim.cmd("vsplit " .. vim.fn.fnameescape(tmpfile))
-  vim.cmd("wincmd l")
-  vim.cmd("diffthis")
-  vim.cmd("wincmd h")
-  vim.cmd("diffthis")
+  local ft = vim.api.nvim_get_option_value('filetype', {buf = bufnr})
+  open_file_in_split(vim.fn.fnameescape(tmpfile), ft)
   return tmpfile
 end
 
