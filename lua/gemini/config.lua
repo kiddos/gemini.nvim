@@ -8,7 +8,7 @@ local default_top_k = 64
 
 local default_chat_config = {
   model = {
-    model_id = api.MODELS.GEMINI_2_5_PRO,
+    model_id = api.MODELS.GEMINI_2_5_FLASH,
     temperature = default_temperature,
     top_k = default_top_k,
   },
