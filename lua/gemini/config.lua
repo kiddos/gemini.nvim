@@ -88,14 +88,27 @@ local default_completion_config = {
     local abs_path = vim.api.nvim_buf_get_name(bufnr)
     local filename = vim.fn.fnamemodify(abs_path, ':.')
     local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+
+    local radius = 10
     local row = pos[1]
     local col = pos[2]
-    local prompt = 'I have a %s file %s with a missing code block. Please generate EXACTLY the code that fills the gap.\n\n'
+
+    local start_line = math.max(1, row - radius)
+    local line_count = vim.api.nvim_buf_line_count(bufnr)
+    local end_line = math.min(line_count, row + radius)
+    local lines = vim.api.nvim_buf_get_lines(bufnr, start_line, end_line, false)
+
+    local prompt = 'I have a %s file %s. Below is a snippet around the missing code block.\n'
     prompt = string.format(prompt, filetype, filename)
     prompt = prompt .. '[CODE BEFORE GAP]\n'
+
+    if start_line > 1 then
+      prompt = prompt .. "// ... (earlier code omitted)\n"
+    end
+
     for i, line in ipairs(lines) do
-      if i == row then
+      local current_buffer_row = start_line + i - 1
+      if current_buffer_row == row then
         local line_prefix = line:sub(1, col)
         local line_suffix = line:sub(col + 1)
         prompt = prompt .. line_prefix .. '\n\n[CODE AFTER GAP]\n' .. line_suffix .. '\n'
@@ -103,8 +116,14 @@ local default_completion_config = {
         prompt = prompt .. line .. '\n'
       end
     end
-    prompt = prompt .. '[INSTRUCTION]\n'
-    prompt = prompt .. 'Generate the code that goes between the two blocks above. Return only the code. If the logic is complete, stop immediately.\n'
+
+    if end_line < line_count then
+      prompt = prompt .. "// ... (later code omitted)\n"
+    end
+
+    prompt = prompt .. '\n[INSTRUCTION]\n'
+    prompt = prompt .. 'Generate EXACTLY the code that fills the gap between the two blocks. '
+    prompt = prompt .. 'Return ONLY the code. No explanation. Stop immediately when the logic is complete.\n'
     return prompt
   end
 }

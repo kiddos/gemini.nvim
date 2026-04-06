@@ -48,7 +48,7 @@ M.gemini_generate_content = function(user_text, system_text, model_name, generat
   end
 
   local json_text = vim.json.encode(data)
-  local cmd = { 'curl', '-X', 'POST', api, '-H', 'Content-Type: application/json', '--data-binary', '@-' }
+  local cmd = { 'curl', '--no-progress-meter', '-X', 'POST', api, '-H', 'Content-Type: application/json', '--data-binary', '@-' }
   local opts = { stdin = json_text }
   if callback then
     return vim.system(cmd, opts, callback)
@@ -113,6 +113,7 @@ M.gemini_generate_content_stream = function(user_text, model_name, generation_co
       end
     end
   end)
+
 end
 
 return M

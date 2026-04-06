@@ -47,6 +47,27 @@ local get_prompt_text = function(bufnr, pos)
   return get_prompt(bufnr, pos)
 end
 
+local function handle_result(win, pos, json_text)
+  local model_response = vim.json.decode(json_text)
+  local text = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
+  if model_response ~= nil and #model_response > 0 then
+    vim.schedule(function()
+      if model_response then
+        local code_blocks = util.strip_code(text)
+        local response = vim.fn.join(code_blocks, '\n\n')
+        M.show_completion_result(response, win, pos)
+      end
+    end)
+  end
+
+  local error_msg = util.table_get(model_response, { 'error', 'message' })
+  if error_msg then
+    vim.schedule(function()
+      vim.api.nvim_echo({{ error_msg, 'WarningMsg' }}, false, {})
+    end)
+  end
+end
+
 M._gemini_complete = function()
   local bufnr = vim.api.nvim_get_current_buf()
   local win = vim.api.nvim_get_current_win()
@@ -67,17 +88,7 @@ M._gemini_complete = function()
   api.gemini_generate_content(user_text, system_text, model_id, generation_config, function(result)
     local json_text = result.stdout
     if json_text and #json_text > 0 then
-      local model_response = vim.json.decode(json_text)
-      model_response = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
-      if model_response ~= nil and #model_response > 0 then
-        vim.schedule(function()
-          if model_response then
-            model_response = util.strip_code(model_response)
-            model_response = vim.fn.join(model_response, '\n\n')
-            M.show_completion_result(model_response, win, pos)
-          end
-        end)
-      end
+      handle_result(win, pos, json_text)
     end
   end)
 end
