@@ -50,13 +50,11 @@ end
 local function handle_result(win, pos, json_text)
   local model_response = vim.json.decode(json_text)
   local text = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
-  if model_response ~= nil and #model_response > 0 then
+  if text ~= nil and #text > 0 then
     vim.schedule(function()
-      if model_response then
-        local code_blocks = util.strip_code(text)
-        local response = vim.fn.join(code_blocks, '\n\n')
-        M.show_completion_result(response, win, pos)
-      end
+      local code_blocks = util.strip_code(text)
+      local response = vim.fn.join(code_blocks, '\n\n')
+      M.show_completion_result(response, win, pos)
     end)
   end
 
