@@ -33,6 +33,10 @@ M.setup = function(opts)
   require('gemini.instruction').setup()
   require('gemini.completion').setup()
   require('gemini.task').setup()
+
+  vim.api.nvim_create_user_command('GeminiAuthenticate', function()
+    require('gemini.oauth').authenticate()
+  end, {})
 end
 
 return M

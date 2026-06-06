@@ -1,5 +1,5 @@
-local api = require('gemini.api')
 local util = require('gemini.util')
+local constants = require('gemini.constants')
 
 local M = {}
 
@@ -8,7 +8,7 @@ local default_top_k = 64
 
 local default_chat_config = {
   model = {
-    model_id = api.MODELS.GEMINI_2_5_FLASH,
+    model_id = constants.MODELS.GEMINI_2_5_FLASH,
     temperature = default_temperature,
     top_k = default_top_k,
   },
@@ -20,7 +20,7 @@ local default_chat_config = {
 
 local default_instruction_config = {
   model = {
-    model_id = api.MODELS.GEMINI_2_5_FLASH,
+    model_id = constants.MODELS.GEMINI_2_5_FLASH,
     temperature = default_temperature,
     top_k = default_top_k,
   },
@@ -69,7 +69,7 @@ local default_instruction_config = {
 
 local default_completion_config = {
   model = {
-    model_id = api.MODELS.GEMINI_2_5_FLASH,
+    model_id = constants.MODELS.GEMINI_2_5_FLASH,
     temperature = default_temperature,
     top_k = default_top_k,
   },
@@ -130,7 +130,7 @@ local default_completion_config = {
 
 local default_task_config = {
   model = {
-    model_id = api.MODELS.GEMINI_2_5_FLASH,
+    model_id = constants.MODELS.GEMINI_2_5_FLASH,
     temperature = default_temperature,
     top_k = default_top_k,
   },
@@ -170,7 +170,12 @@ M.set_config = function(opts)
     chat = vim.tbl_deep_extend('force', {}, default_chat_config, opts.chat_config or {}),
     completion = vim.tbl_deep_extend('force', {}, default_completion_config, opts.completion or {}),
     instruction = vim.tbl_deep_extend('force', {}, default_instruction_config, opts.instruction or {}),
-    task = vim.tbl_deep_extend('force', {}, default_task_config, opts.task or {})
+    task = vim.tbl_deep_extend('force', {}, default_task_config, opts.task or {}),
+    oauth = vim.tbl_deep_extend('force', {}, {
+      enabled = false,
+      client_id = "",
+      client_secret = "",
+    }, opts.oauth or {})
   }
 end
 
