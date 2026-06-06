@@ -1,5 +1,6 @@
 local api = require('gemini.api')
 local util = require('gemini.util')
+local constants = require('gemini.constants')
 
 describe('api', function()
   it('should send message', function()
@@ -9,10 +10,9 @@ describe('api', function()
       max_output_tokens = 2048,
       response_mime_type = 'text/plain',
     }
-    local future = api.gemini_generate_content('hello there', nil, api.MODELS.GEMINI_2_0_FLASH, generation_config, nil)
+    local future = api.gemini_generate_content('hello there', nil, constants.MODELS.GEMINI_2_5_FLASH, generation_config, nil)
     local result = future:wait()
     local stdout = result.stdout
-    print(stdout)
     assert(#stdout > 0)
 
     local result = vim.json.decode(stdout)
@@ -29,10 +29,9 @@ describe('api', function()
       response_mime_type = 'text/plain',
     }
     local long_message = string.rep('this is a very very long message ', 3000)
-    local future = api.gemini_generate_content(long_message, nil, api.MODELS.GEMINI_2_0_FLASH, generation_config, nil)
+    local future = api.gemini_generate_content(long_message, nil, constants.MODELS.GEMINI_2_5_FLASH, generation_config, nil)
     local result = future:wait()
     local stdout = result.stdout
-    print(stdout)
     assert(#stdout > 0)
 
     local result = vim.json.decode(stdout)

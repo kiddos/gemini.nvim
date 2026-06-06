@@ -32,10 +32,25 @@ local function get_api_info(callback)
   end
 end
 
+local function new_future()
+  local f = {
+    done = false,
+    result = nil,
+  }
+  function f:wait(timeout)
+    vim.wait(timeout or 30000, function() return f.done end)
+    return f.result
+  end
+
+  return f
+end
+
 M.gemini_generate_content = function(user_text, system_text, model_name, generation_config, callback)
+  local future = new_future()
   get_api_info(function(info)
     if not info then
       print("No API key or OAuth token found.")
+      future.done = true
       return
     end
 
@@ -73,12 +88,17 @@ M.gemini_generate_content = function(user_text, system_text, model_name, generat
     table.insert(cmd, '@-')
 
     local opts = { stdin = json_text }
-    if callback then
-      vim.system(cmd, opts, callback)
-    else
-      vim.system(cmd, opts)
+    local internal_callback = function(obj)
+      future.result = obj
+      future.done = true
+      if callback then
+        callback(obj)
+      end
     end
+
+    vim.system(cmd, opts, internal_callback)
   end)
+  return future
 end
 
 M.gemini_generate_content_stream = function(user_text, model_name, generation_config, callback)
