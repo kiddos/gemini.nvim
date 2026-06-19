@@ -5,10 +5,11 @@ local M = {}
 
 local default_temperature = 0.06
 local default_top_k = 64
+local default_model = constants.MODELS.GEMINI_3_1_FLASH_LITE
 
 local default_chat_config = {
   model = {
-    model_id = constants.MODELS.GEMINI_2_5_FLASH,
+    model_id = default_model,
     temperature = default_temperature,
     top_k = default_top_k,
   },
@@ -20,7 +21,7 @@ local default_chat_config = {
 
 local default_instruction_config = {
   model = {
-    model_id = constants.MODELS.GEMINI_2_5_FLASH,
+    model_id = default_model,
     temperature = default_temperature,
     top_k = default_top_k,
   },
@@ -69,7 +70,7 @@ local default_instruction_config = {
 
 local default_completion_config = {
   model = {
-    model_id = constants.MODELS.GEMINI_2_5_FLASH,
+    model_id = default_model,
     temperature = default_temperature,
     top_k = default_top_k,
   },
@@ -130,7 +131,7 @@ local default_completion_config = {
 
 local default_task_config = {
   model = {
-    model_id = constants.MODELS.GEMINI_2_5_FLASH,
+    model_id = default_model,
     temperature = default_temperature,
     top_k = default_top_k,
   },
@@ -188,9 +189,9 @@ M.get_gemini_generation_config = function(space)
     temperature = M.get_config({ space, 'model', 'temperature' }) or default_temperature,
     topK = M.get_config({ space, 'model', 'top_k' }) or default_top_k,
     response_mime_type = 'text/plain',
-    thinkingConfig = {
-      thinkingBudget = 0
-    }
+    -- thinkingConfig = {
+    --   thinkingLevel = "MEDIUM",
+    -- }
   }
 end
 
