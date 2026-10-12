@@ -8,7 +8,7 @@ describe('config', function()
 
   it('should have default values', function()
     local chat_config = config.get_config('chat')
-    assert.are.equal(constants.MODELS.GEMINI_2_5_FLASH, chat_config.model.model_id)
+    assert.are.equal(constants.MODELS.GEMINI_3_1_FLASH_LITE, chat_config.model.model_id)
     assert.are.equal(0.06, chat_config.model.temperature)
   end)
 
@@ -22,7 +22,7 @@ describe('config', function()
     })
     assert.are.equal(0.5, config.get_config({ 'chat', 'model', 'temperature' }))
     -- Ensure other defaults are preserved
-    assert.are.equal(constants.MODELS.GEMINI_2_5_FLASH, config.get_config({ 'chat', 'model', 'model_id' }))
+    assert.are.equal(constants.MODELS.GEMINI_3_1_FLASH_LITE, config.get_config({ 'chat', 'model', 'model_id' }))
   end)
 
   it('should get generation config', function()
