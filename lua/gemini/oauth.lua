@@ -9,7 +9,7 @@ local TOKEN_URL = "https://oauth2.googleapis.com/token"
 local SCOPE = "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/generative-language.retriever"
 local REDIRECT_URI = "http://localhost:3333"
 
-local function save_tokens(tokens)
+M.save_tokens = function(tokens)
   vim.schedule(function()
     local dir = vim.fn.fnamemodify(TOKEN_FILE, ":h")
     if vim.fn.isdirectory(dir) == 0 then
@@ -23,7 +23,7 @@ local function save_tokens(tokens)
   end)
 end
 
-local function load_tokens()
+M.load_tokens = function()
   local f = io.open(TOKEN_FILE, "r")
   if f then
     local content = f:read("*a")
@@ -56,7 +56,7 @@ local function exchange_code(code, callback)
         local tokens = vim.json.decode(obj.stdout)
         if tokens.access_token then
           tokens.expires_at = os.time() + (tokens.expires_in or 3600)
-          save_tokens(tokens)
+          M.save_tokens(tokens)
           print("Tokens saved successfully at " .. TOKEN_FILE)
           if callback then callback(tokens) end
         else
@@ -143,6 +143,14 @@ M.authenticate = function()
 end
 
 M.refresh_token = function(tokens, callback)
+  if not tokens or not tokens.refresh_token or tokens.refresh_token == "" then
+    local err_msg = "OAuth Refresh Error: No refresh token available."
+    print(err_msg)
+    vim.notify(err_msg, vim.log.levels.ERROR)
+    if callback then callback(nil) end
+    return
+  end
+
   local oauth_cfg = config.get_config('oauth')
   local cmd = {
     'curl', '-s', '-X', 'POST', TOKEN_URL,
@@ -154,22 +162,27 @@ M.refresh_token = function(tokens, callback)
   vim.system(cmd, {}, function(obj)
     vim.schedule(function()
       if obj.code == 0 then
-        local new_tokens = vim.json.decode(obj.stdout)
-        if new_tokens.access_token then
+        local ok, new_tokens = pcall(vim.json.decode, obj.stdout)
+        if ok and new_tokens and new_tokens.access_token then
           tokens.access_token = new_tokens.access_token
           tokens.expires_at = os.time() + (new_tokens.expires_in or 3600)
           -- Keep old refresh_token if not provided
           if new_tokens.refresh_token then
             tokens.refresh_token = new_tokens.refresh_token
           end
-          save_tokens(tokens)
+          M.save_tokens(tokens)
           if callback then callback(tokens.access_token) end
         else
-          print("Error refreshing token: " .. obj.stdout)
+          local err_detail = new_tokens and (new_tokens.error_description or new_tokens.error) or obj.stdout
+          local err_msg = "OAuth Refresh Error: " .. (err_detail or "Failed to refresh token")
+          print(err_msg)
+          vim.notify(err_msg, vim.log.levels.ERROR)
           if callback then callback(nil) end
         end
       else
-        print("Error in curl: " .. obj.stderr)
+        local err_msg = "OAuth Refresh Curl Error: " .. (obj.stderr ~= "" and obj.stderr or "curl failed")
+        print(err_msg)
+        vim.notify(err_msg, vim.log.levels.ERROR)
         if callback then callback(nil) end
       end
     end)
@@ -177,14 +190,16 @@ M.refresh_token = function(tokens, callback)
 end
 
 M.get_token = function(callback)
-  local tokens = load_tokens()
+  local tokens = M.load_tokens()
   if not tokens then
-    print("No OAuth tokens found. Please run :GeminiAuthenticate")
+    local err_msg = "No OAuth tokens found. Please run :GeminiAuthenticate"
+    print(err_msg)
+    vim.notify(err_msg, vim.log.levels.ERROR)
     if callback then callback(nil) end
     return
   end
 
-  if os.time() > (tokens.expires_at - 60) then -- Refresh 1 minute before expiry
+  if not tokens.expires_at or os.time() >= (tokens.expires_at - 60) then -- Refresh 1 minute before expiry
     M.refresh_token(tokens, callback)
   else
     if callback then callback(tokens.access_token) end
