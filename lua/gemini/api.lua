@@ -156,16 +156,22 @@ M.gemini_generate_content_stream = function(user_text, model_name, generation_co
         streamed_data = streamed_data .. data
 
         local start_index = string.find(streamed_data, 'data:')
-        local end_index = string.find(streamed_data, '\r')
-        local json_text_chunk = ''
-        while start_index and end_index do
-          if end_index >= start_index then
-            json_text_chunk = string.sub(streamed_data, start_index + 5, end_index - 1)
-            callback(json_text_chunk)
+        local line_end = string.find(streamed_data, '[\r\n]')
+        while start_index and line_end do
+          if line_end > start_index then
+            local json_text_chunk = string.sub(streamed_data, start_index + 5, line_end - 1)
+            json_text_chunk = vim.trim(json_text_chunk)
+            if #json_text_chunk > 0 then
+              callback(json_text_chunk)
+            end
           end
-          streamed_data = string.sub(streamed_data, end_index + 1)
+          local next_pos = line_end + 1
+          if string.sub(streamed_data, line_end, line_end + 1) == '\r\n' then
+            next_pos = line_end + 2
+          end
+          streamed_data = string.sub(streamed_data, next_pos)
           start_index = string.find(streamed_data, 'data:')
-          end_index = string.find(streamed_data, '\r')
+          line_end = string.find(streamed_data, '[\r\n]')
         end
       end
     end)

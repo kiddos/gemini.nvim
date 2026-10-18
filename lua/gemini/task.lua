@@ -87,18 +87,33 @@ M.run_task = function(ctx)
   local generation_config = config.get_gemini_generation_config('task')
   local model_id = config.get_config({ 'task', 'model', 'model_id' })
   api.gemini_generate_content(prompt, system_text, model_id, generation_config, function(result)
+    if not result or not result.stdout then
+      return
+    end
     local json_text = result.stdout
     if json_text and #json_text > 0 then
-      local model_response = vim.json.decode(json_text)
-      model_response = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
-      if model_response ~= nil and #model_response > 0 then
-        model_response = util.strip_code(model_response)
+      local ok, model_response = pcall(vim.json.decode, json_text)
+      if not ok or not model_response then
+        return
+      end
+
+      local err_msg = util.table_get(model_response, { 'error', 'message' })
+      if err_msg then
         vim.schedule(function()
-          model_response = vim.fn.join(model_response, '\n')
-          if #model_response then
+          vim.notify('Gemini Task Error: ' .. err_msg, vim.log.levels.ERROR)
+        end)
+        return
+      end
+
+      local text = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
+      if text ~= nil and #text > 0 then
+        local code_blocks = util.strip_code(text)
+        vim.schedule(function()
+          local merged_response = vim.fn.join(code_blocks, '\n')
+          if #merged_response > 0 then
             context.bufnr = bufnr
-            context.model_response = model_response
-            context.tmpfile = diff_with_current_file(bufnr, model_response)
+            context.model_response = merged_response
+            context.tmpfile = diff_with_current_file(bufnr, merged_response)
           end
         end)
       end

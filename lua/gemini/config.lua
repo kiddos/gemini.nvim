@@ -48,7 +48,7 @@ local default_instruction_config = {
         local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
         local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
             .. 'Objective: Do a thorough code review for the following code.\n'
-            .. 'Provide detail explaination and sincere comments.\n'
+              .. 'Provide detailed explanation and sincere comments.\n'
         return string.format(prompt, filetype, code)
       end,
     },
@@ -61,7 +61,7 @@ local default_instruction_config = {
         local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
         local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
             .. 'Objective: Explain the following code.\n'
-            .. 'Provide detail explaination and sincere comments.\n'
+              .. 'Provide detailed explanation and sincere comments.\n'
         return string.format(prompt, filetype, code)
       end,
     },
@@ -164,6 +164,22 @@ local default_task_config = {
   end
 }
 
+local default_hints_config = {
+  enabled = true,
+  model = {
+    model_id = default_model,
+    temperature = default_temperature,
+    top_k = default_top_k,
+  },
+  hints_delay = 2000,
+  get_prompt = function(node, bufnr)
+    local code_block = vim.treesitter.get_node_text(node, bufnr)
+    local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+    local prompt = "Instruction: Use 1 or 2 sentences to describe what the following " .. filetype .. " function does:\n\n```" .. filetype .. "\n" .. code_block .. "\n```"
+    return prompt
+  end,
+}
+
 M.set_config = function(opts)
   opts = opts or {}
 
@@ -172,6 +188,7 @@ M.set_config = function(opts)
     completion = vim.tbl_deep_extend('force', {}, default_completion_config, opts.completion or {}),
     instruction = vim.tbl_deep_extend('force', {}, default_instruction_config, opts.instruction or {}),
     task = vim.tbl_deep_extend('force', {}, default_task_config, opts.task or {}),
+    hints = vim.tbl_deep_extend('force', {}, default_hints_config, opts.hints or {}),
     oauth = vim.tbl_deep_extend('force', {}, {
       enabled = false,
       client_id = "",

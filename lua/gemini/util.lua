@@ -89,7 +89,7 @@ M.strip_code = function(text)
     return code_blocks
   end
 
-  local pattern = "```(%w+)%s*(.-)%s*```"
+  local pattern = "```(%w*)%s*(.-)%s*```"
   for _, code_block in text:gmatch(pattern) do
     table.insert(code_blocks, code_block)
   end

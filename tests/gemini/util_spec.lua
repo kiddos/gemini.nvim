@@ -48,6 +48,13 @@ describe('util', function()
       assert.are.same(expected, result)
     end)
 
+    it('should extract code blocks without language specifier', function()
+      local text = "Here is code without lang tag:\n```\nprint('no tag')\n```"
+      local expected = { "print('no tag')" }
+      local result = util.strip_code(text)
+      assert.are.same(expected, result)
+    end)
+
     it('should return the whole text if no code blocks found', function()
       local text = "Just some plain text."
       local expected = { "Just some plain text." }

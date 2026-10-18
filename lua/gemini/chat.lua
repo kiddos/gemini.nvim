@@ -65,13 +65,25 @@ M.start_chat = function(cxt)
   local text = ''
   local model_id = config.get_config({ 'chat', 'model', 'model_id' })
   api.gemini_generate_content_stream(user_text, model_id, generation_config, function(json_text)
-    local model_response = vim.json.decode(json_text)
-    model_response = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
-    if not model_response then
+    local ok, model_response = pcall(vim.json.decode, json_text)
+    if not ok or not model_response then
       return
     end
 
-    text = text .. model_response
+    local err_msg = util.table_get(model_response, { 'error', 'message' })
+    if err_msg then
+      vim.schedule(function()
+        vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { 'Error: ' .. err_msg })
+      end)
+      return
+    end
+
+    local response_text = util.table_get(model_response, { 'candidates', 1, 'content', 'parts', 1, 'text' })
+    if not response_text then
+      return
+    end
+
+    text = text .. response_text
     vim.schedule(function()
       lines = vim.split(text, '\n')
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)

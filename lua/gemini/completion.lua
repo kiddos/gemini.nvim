@@ -111,7 +111,6 @@ M.gemini_complete = util.debounce(function()
     return
   end
 
-  print('-- gemini complete --')
   M._gemini_complete()
 end, config.get_config({ 'completion', 'completion_delay' }) or 1000)
 
@@ -180,7 +179,7 @@ M.insert_completion_result = function()
   end
 
   local bufnr = vim.api.nvim_get_current_buf()
-  if not context.completion.bufnr == bufnr then
+  if context.completion.bufnr ~= bufnr then
     return
   end
 

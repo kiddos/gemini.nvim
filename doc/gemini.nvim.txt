@@ -2,7 +2,7 @@
 
 INTRODUCTION                                    *gemini.nvim-intro*
 
-This plugin try to interface Google's Gemini API into neovim.
+This plugin tries to interface Google's Gemini API into Neovim.
 
 
 
@@ -117,7 +117,7 @@ CONFIGURATION                                    *gemini.nvim-config*
           local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
           local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
               .. 'Objective: Do a thorough code review for the following code.\n'
-              .. 'Provide detail explaination and sincere comments.\n'
+              .. 'Provide detailed explanation and sincere comments.\n'
           return string.format(prompt, filetype, code)
         end,
       },
@@ -130,7 +130,7 @@ CONFIGURATION                                    *gemini.nvim-config*
           local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
           local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
               .. 'Objective: Explain the following code.\n'
-              .. 'Provide detail explaination and sincere comments.\n'
+              .. 'Provide detailed explanation and sincere comments.\n'
           return string.format(prompt, filetype, code)
         end,
       },

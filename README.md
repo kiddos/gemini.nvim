@@ -1,6 +1,6 @@
 # gemini.nvim
 
-This plugin try to interface Google's Gemini API into neovim.
+This plugin tries to interface Google's Gemini API into Neovim.
 
 
 ## Features
@@ -90,18 +90,10 @@ default setting
   hints = {
     enabled = true,
     hints_delay = 2000,
-    insert_result_key = '<S-Tab>',
     get_prompt = function(node, bufnr)
       local code_block = vim.treesitter.get_node_text(node, bufnr)
       local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
-      local prompt = [[
-  In struction: Use 1 or 2 sentences to describe what the following {filetype} function does:
-
-  ```{filetype}
-  {code_block}
-  ``]] .. '`'
-      prompt = prompt:gsub('{filetype}', filetype)
-      prompt = prompt:gsub('{code_block}', code_block)
+      local prompt = "Instruction: Use 1 or 2 sentences to describe what the following " .. filetype .. " function does:\n\n```" .. filetype .. "\n" .. code_block .. "\n```"
       return prompt
     end
   },
@@ -118,7 +110,7 @@ default setting
     get_system_text = function()
       return "You are a coding AI assistant that autocomplete user's code."
         .. "\n* Your task is to provide code suggestion at the cursor location marked by <cursor></cursor>."
-        .. '\n* Your response does not need to contain explaination.'
+        .. '\n* Your response does not need to contain explanation.'
     end,
     get_prompt = function(bufnr, pos)
       local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
@@ -168,7 +160,7 @@ default setting
           local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
           local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
               .. 'Objective: Do a thorough code review for the following code.\n'
-              .. 'Provide detail explaination and sincere comments.\n'
+              .. 'Provide detailed explanation and sincere comments.\n'
           return string.format(prompt, filetype, code)
         end,
       },
@@ -181,7 +173,7 @@ default setting
           local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
           local prompt = 'Context:\n\n```%s\n%s\n```\n\n'
               .. 'Objective: Explain the following code.\n'
-              .. 'Provide detail explaination and sincere comments.\n'
+              .. 'Provide detailed explanation and sincere comments.\n'
           return string.format(prompt, filetype, code)
         end,
       },
